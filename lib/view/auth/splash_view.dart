@@ -42,17 +42,17 @@ class _SplashViewState extends State<SplashView>
     final authController = Get.put(AuthController(), permanent: true);
     await Future.delayed(const Duration(milliseconds: 500));
     if(authController.isAuthenticated){
-      Get.offAllNamed(AppRoutes.main);
+      Get.offAllNamed(AppRoutes.main); 
     } else {
       Get.offAllNamed(AppRoutes.login);
     }
   }
-
+@override
 void dispose() {
     _animationController.dispose();
     super.dispose();
   } 
-
+@override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primaryColor,
@@ -96,13 +96,13 @@ boxShadow: [
              Text("connect with your friends and family",
              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.white.withOpacity( 0.8),
-              fontWeight: FontWeight.normal
+              fontWeight: FontWeight.w600
              ),
               ),
               SizedBox(height: 64,),
               CircularProgressIndicator(
               color: Colors.white,
-              strokeWidth: 2,
+              strokeWidth: 4,
               )
             ],
           )
