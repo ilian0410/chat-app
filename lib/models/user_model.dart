@@ -1,5 +1,5 @@
 import 'dart:core';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   final String id;
@@ -20,29 +20,33 @@ class UserModel {
     required this.createdAt,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'email': email,
-      'displayName': displayName,
-      'photoURL': photoURL,
-      'isOnline': isOnline,
-      'lastSeen': lastSeen.toIso8601String(),
-      'createdAt': createdAt.toIso8601String(),
-    };
-  }
+ Map<String, dynamic> toMap() {
+  return {
+    'id': id,
+    'email': email,
+    'displayName': displayName,
+    'photoURL': photoURL,
+    'isOnline': isOnline,
+    'lastSeen': Timestamp.fromDate(lastSeen),
+    'createdAt': Timestamp.fromDate(createdAt),
+  };
+}
 
   static UserModel fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id'] ?? '',
-      email: map['email'] ?? '',
-      displayName: map['displayName'] ?? '',
-      photoURL: map['photoURL'] ?? '',
-      isOnline: map['isOnline'] ?? false,
-      lastSeen: DateTime.fromMillisecondsSinceEpoch(map['lastSeen'] ?? 0),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0)
-    );
-  }
+  return UserModel(
+    id: map['id'] ?? '',
+    email: map['email'] ?? '',
+    displayName: map['displayName'] ?? '',
+    photoURL: map['photoURL'] ?? '',
+    isOnline: map['isOnline'] ?? false,
+    lastSeen: map['lastSeen'] is String
+        ? DateTime.parse(map['lastSeen'])
+        : DateTime.fromMillisecondsSinceEpoch(map['lastSeen']),
+    createdAt: map['createdAt'] is String
+        ? DateTime.parse(map['createdAt'])
+        : DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+  );
+}
   
   UserModel copyWith({
     String? id,

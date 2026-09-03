@@ -1,6 +1,7 @@
 import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/theme/app_theme.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -42,7 +43,9 @@ class _SplashViewState extends State<SplashView>
     final authController = Get.put(AuthController(), permanent: true);
     await Future.delayed(const Duration(milliseconds: 500));
     if(authController.isAuthenticated){
-      Get.offAllNamed(AppRoutes.main); 
+      //Get.offAllNamed(AppRoutes.main); 
+            Get.offAllNamed(AppRoutes.profile); 
+
     } else {
       Get.offAllNamed(AppRoutes.login);
     }

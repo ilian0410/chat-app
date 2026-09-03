@@ -28,13 +28,13 @@ class AuthController extends GetxController {
   }
 
   void _handleAuthStateChanged(User? user) {
-    if (user != null) {
-      if (Get.currentRoute != AppRoutes.main) {
-        Get.offAllNamed(AppRoutes.main);
-      }
-    } else {
+    if (user == null) {
       if (Get.currentRoute != AppRoutes.login) {
         Get.offAllNamed(AppRoutes.login);
+      }
+    } else {
+      if (Get.currentRoute != AppRoutes.profile) {
+        Get.offAllNamed(AppRoutes.profile);
       }
     }
     if (!isinitialized) {
@@ -63,11 +63,11 @@ class AuthController extends GetxController {
       );
       if (userModel != null) {
         _userModel.value = userModel;
-        Get.offAllNamed(AppRoutes.main);
+        Get.offAllNamed(AppRoutes.profile);
       }
     } catch (e) {
       _error.value = e.toString();
-      Get.snackbar('Error', 'Failed to login in');
+      Get.snackbar('Error', 'Failed to login in: $e');
       print(e);
     } finally {
       _isLoading.value = false;
@@ -88,7 +88,7 @@ class AuthController extends GetxController {
       }
     } catch (e) {
       _error.value = e.toString();
-      Get.snackbar('Error', 'Failed to Create Account');
+      Get.snackbar('Error', 'Failed to Create Account: $e');
       print(e);
     } finally {
       _isLoading.value = false;

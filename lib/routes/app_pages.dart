@@ -1,6 +1,10 @@
+import 'package:chat_app/controllers/change_password_controller.dart';
 import 'package:chat_app/routes/app_routes.dart';
+import 'package:chat_app/controllers/profile_controller.dart';
 import 'package:chat_app/view/auth/forgot_password_view.dart';
 import 'package:chat_app/view/auth/login_view.dart';
+import 'package:chat_app/view/Profile/change_password_view.dart';
+import 'package:chat_app/view/Profile/profile_view.dart';
 import 'package:chat_app/view/auth/register_view.dart';
 import 'package:chat_app/view/auth/splash_view.dart';
 import 'package:get/get.dart';
@@ -15,6 +19,20 @@ class AppPages {
     GetPage(name: AppRoutes.login, page: () => LoginView()),
     GetPage(name: AppRoutes.register, page: () => RegisterView()),
     GetPage(name: AppRoutes.forgotPassword, page: () => ForgotPasswordView()),
+    GetPage(
+      name: AppRoutes.profile,
+      page: () => ProfileView(),
+      binding: BindingsBuilder(() {
+Get.put(ProfileController());
+      }),
+    ),
+    GetPage(
+      name: AppRoutes.changePassword,
+      page: () => ChangePasswordView(),
+      binding: BindingsBuilder((){
+        Get.put(ChangePasswordController());
+      })
+    ), 
 
     /*GetPage(
       name: AppRoutes.home,
@@ -33,16 +51,7 @@ class AppPages {
    
     
     
-    GetPage(
-      name: AppRoutes.changePassword,
-      page: () => ChangePasswordView(),
-      binding: BindingsBuilder((){
-        Get.put(ChangePasswordController());
-      })
-    ),    GetPage(
-      name: AppRoutes.profile,
-      page: () => ProfileView(),
-    ),    GetPage(
+         GetPage(
       name: AppRoutes.chat,
       page: () => ChatView(),
     ),    GetPage(
