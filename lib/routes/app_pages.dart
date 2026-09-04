@@ -1,6 +1,8 @@
 import 'package:chat_app/controllers/change_password_controller.dart';
+import 'package:chat_app/controllers/main_controller.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/controllers/profile_controller.dart';
+import 'package:chat_app/view/Profile/main_view.dart';
 import 'package:chat_app/view/auth/forgot_password_view.dart';
 import 'package:chat_app/view/auth/login_view.dart';
 import 'package:chat_app/view/Profile/change_password_view.dart';
@@ -33,7 +35,13 @@ Get.put(ProfileController());
         Get.put(ChangePasswordController());
       })
     ), 
-
+ GetPage(
+      name: AppRoutes.main,
+      page: () => MainView(),
+      binding: BindingsBuilder((){
+        Get.put(MainController());
+      })
+    ),
     /*GetPage(
       name: AppRoutes.home,
       page: () => HomeView(),
@@ -41,13 +49,7 @@ Get.put(ProfileController());
         Get.put(HomeController());
       })
     ),
-    GetPage(
-      name: AppRoutes.main,
-      page: () => MainView(),
-      binding: BindingsBuilder((){
-        Get.put(MainController());
-      })
-    ),
+   
    
     
     

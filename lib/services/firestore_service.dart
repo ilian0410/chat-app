@@ -277,7 +277,7 @@ class FirestoreService {
           id: DateTime.now().millisecondsSinceEpoch.toString(),
           userId: user2Id,
           title: 'Friend Removed',
-          body: 'You have been removed from ${userId}\'s friend list.',
+          body: 'You have been removed from $userId\'s friend list.',
           type: NotificationType.friendRemoved,
           data: {'userId': userId},
           createdAt: DateTime.now(),
