@@ -1,9 +1,9 @@
 class ChatModel {
   final String id;
   final List<String> participants;
-  final String lastMessage;
+  final String? lastMessage;
 
-  final DateTime lastMessageTime;
+  final DateTime? lastMessageTime;
   final String? lastMessageSenderId;
   final Map<String, int> unreadCount;
   final Map<String, bool> deletedBy;
@@ -15,9 +15,9 @@ class ChatModel {
   ChatModel({
     required this.id,
     required this.participants,
-    required this.lastMessage,
-    required this.lastMessageTime,
-    required this.lastMessageSenderId,
+    this.lastMessage,
+    this.lastMessageTime,
+    this.lastMessageSenderId,
     required this.unreadCount,
     this.deletedBy = const {},
     this.deletedAt = const {},
@@ -31,7 +31,7 @@ class ChatModel {
       'id': id,
       'participants': participants,
       'lastMessage': lastMessage,
-      'lastMessageTime': lastMessageTime.millisecondsSinceEpoch,
+      'lastMessageTime': lastMessageTime?.millisecondsSinceEpoch,
       'lastMessageSenderId': lastMessageSenderId,
       'unreadCount': unreadCount,
       'deletedBy': deletedBy,
@@ -143,12 +143,12 @@ class ChatModel {
     return lastSeenBy[userId];
   }
 
-  bool isMessageSeenBy(String currentUserId, String otherUserId) {
+  bool isMessageSeen(String currentUserId, String otherUserId) {
     if (lastMessageSenderId == currentUserId) {
       final otherUserLastSeen = getLastSeenBy(otherUserId);
       if (otherUserLastSeen != null) {
-        return otherUserLastSeen.isAfter(lastMessageTime) ||
-            otherUserLastSeen.isAtSameMomentAs(lastMessageTime);
+        return otherUserLastSeen.isAfter(lastMessageTime!) ||
+            otherUserLastSeen.isAtSameMomentAs(lastMessageTime!);
       }
     }
     return false;

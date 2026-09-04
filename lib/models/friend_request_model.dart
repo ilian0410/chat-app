@@ -1,6 +1,6 @@
 enum FriendRequestStatus { pending, accepted, declined }
 
-class FriendRequest {
+class FriendRequestModel {
   final String id;
   final String senderId;
   final String receiverId;
@@ -9,7 +9,7 @@ class FriendRequest {
   final DateTime? respondedAt;
   final String? message;
 
-  FriendRequest({
+  FriendRequestModel({
     required this.id,
     required this.senderId,
     required this.receiverId,
@@ -31,8 +31,8 @@ class FriendRequest {
     };
   }
 
-  static FriendRequest fromMap(Map<String, dynamic> map) {
-    return FriendRequest(
+  static FriendRequestModel fromMap(Map<String, dynamic> map) {
+    return FriendRequestModel(
       id: map['id'] ?? '',
       senderId: map['senderId'] ?? '',
       receiverId: map['receiverId'] ?? '',
@@ -48,7 +48,7 @@ class FriendRequest {
     );
   }
 
-  FriendRequest copyWith({
+  FriendRequestModel copyWith({
     String? id,
     String? senderId,
     String? receiverId,
@@ -57,7 +57,7 @@ class FriendRequest {
     DateTime? respondedAt,
     String? message,
   }) {
-    return FriendRequest(
+    return FriendRequestModel(
       id: id ?? this.id,
       senderId: senderId ?? this.senderId,
       receiverId: receiverId ?? this.receiverId,
