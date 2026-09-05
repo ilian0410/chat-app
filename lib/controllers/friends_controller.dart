@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:chat_app/models/friendship_model.dart';
 import 'package:chat_app/models/user_model.dart';
+import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -154,15 +155,17 @@ class FriendsController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('Error', 'failed to remove friend}',
-          backgroundColor: Colors.redAccent.withOpacity(0.1),
-          colorText: Colors.redAccent,
-          duration: Duration(seconds: 4));
-          print(e);
+      Get.snackbar(
+        'Error',
+        'failed to remove friend}',
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+        colorText: Colors.redAccent,
+        duration: Duration(seconds: 4),
+      );
+      print(e);
     } finally {
       _isLoading.value = false;
     }
-
   }
 
   Future<void> blockFriend(UserModel friend) async {
@@ -202,18 +205,72 @@ class FriendsController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar('Error', 'Failed to block friend',
-          backgroundColor: Colors.redAccent.withOpacity(0.1),
-          colorText: Colors.redAccent,
-          duration: Duration(seconds: 4));
+      Get.snackbar(
+        'Error',
+        'Failed to block friend',
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+        colorText: Colors.redAccent,
+        duration: Duration(seconds: 4),
+      );
     } finally {
       _isLoading.value = false;
     }
   }
 
   Future<void> startChat(UserModel friend) async {
+    try {
+      _isLoading.value = true;
+      final currentUserId = _authController.user?.uid;
+      if (currentUserId != null) {
+        Get.toNamed(
+          AppRoutes.chat,
+          arguments: {
+'chatId': null,
+            'otherUser': friend,
+            'friendName': true,
+
+          },
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to start chat',
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+        colorText: Colors.redAccent,
+        duration: Duration(seconds: 4),
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+ String getLastSeenText(UserModel user) {
+    if (user.isOnline) {
+      return "Online";
+    } else {
+      final now = DateTime.now();
+      final difference = now.difference(user.lastSeen);
+      if (difference.inMinutes < 1) {
+        return "seen just now";
+      } else if (difference.inHours < 1) {
+        return "seen ${difference.inMinutes} min ago";
+      } else if (difference.inDays < 1) {
+        return "seen ${difference.inHours} h ago";
+      } else if (difference.inDays < 7) {
+        return "seen ${difference.inDays} d ago";
+      } else {
+        return "seen on ${user.lastSeen.day}/${user.lastSeen.month}/${user.lastSeen.year}";
+      }
+    }
+  }
 
 
+void openFriendRequests() {
+    Get.toNamed(AppRoutes.friendRequests);
+  }
 
+  void clearError() {
+    _error.value = '';
   }
 }
