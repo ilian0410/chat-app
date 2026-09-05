@@ -54,7 +54,7 @@ class FriendsController extends GetxController {
     if (currentUserId != null) {
       _friendshipsSubscriptions?.cancel();
       _friendshipsSubscriptions = _firestoreService
-          .getFriendshipsStream(currentUserId)
+          .getFriendsStream(currentUserId)
           .listen((friendshipList) {
             _friendships.value = friendshipList;
             _loadFriendDetails(currentUserId, friendshipList);
@@ -162,6 +162,58 @@ class FriendsController extends GetxController {
     } finally {
       _isLoading.value = false;
     }
+
+  }
+
+  Future<void> blockFriend(UserModel friend) async {
+    try {
+      final result = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('Block Friend'),
+          content: Text(
+            'Are you sure you want to block ${friend.displayName}? You will no longer be able to communicate with this user.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+              child: Text('Block'),
+            ),
+          ],
+        ),
+      );
+
+      if (result == true) {
+        final currentUserId = _authController.user?.uid;
+        if (currentUserId != null) {
+          await _firestoreService.blockUser(currentUserId, friend.id);
+
+          Get.snackbar(
+            'Success',
+            '${friend.displayName} has been blocked.',
+            backgroundColor: Colors.green,
+            colorText: Colors.green,
+            duration: Duration(seconds: 4),
+          );
+        }
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to block friend',
+          backgroundColor: Colors.redAccent.withOpacity(0.1),
+          colorText: Colors.redAccent,
+          duration: Duration(seconds: 4));
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> startChat(UserModel friend) async {
+
+
 
   }
 }
