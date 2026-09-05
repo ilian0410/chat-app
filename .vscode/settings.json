@@ -1,1 +1,10 @@
-{}
+{
+  "files.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/.dart_tool": true
+  }
+}
