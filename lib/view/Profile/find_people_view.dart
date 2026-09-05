@@ -133,7 +133,7 @@ class FindPeopleView extends GetView<UsersListController> {
                   ? 'Try adjusting your search or check back later.'
                   : 'All users will appear here once they join the app.',
               style: Theme.of(Get.context!).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondaryColor,
+                color: AppTheme.primaryColor.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),

@@ -1,3 +1,4 @@
+import 'package:chat_app/controllers/friends_controller.dart';
 import 'package:chat_app/controllers/profile_controller.dart';
 import 'package:chat_app/controllers/users_list_controller.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +15,10 @@ class MainController extends GetxController {
     super.onInit();
     //Init all required controllers
     /*Get.lazyPut(() => HomeController());
-Get.lazyPut(() => FriendsController());
 */
+
+Get.lazyPut(() => FriendsController());
+
 Get.lazyPut(() => UsersListController());
     Get.lazyPut(() => ProfileController());
   }

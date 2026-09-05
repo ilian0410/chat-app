@@ -1,7 +1,10 @@
 import 'package:chat_app/controllers/change_password_controller.dart';
+import 'package:chat_app/controllers/friends_controller.dart';
 import 'package:chat_app/controllers/main_controller.dart';
+import 'package:chat_app/controllers/users_list_controller.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/controllers/profile_controller.dart';
+import 'package:chat_app/view/Profile/find_people_view.dart';
 import 'package:chat_app/view/Profile/main_view.dart';
 import 'package:chat_app/view/auth/forgot_password_view.dart';
 import 'package:chat_app/view/auth/login_view.dart';
@@ -9,6 +12,7 @@ import 'package:chat_app/view/Profile/change_password_view.dart';
 import 'package:chat_app/view/Profile/profile_view.dart';
 import 'package:chat_app/view/auth/register_view.dart';
 import 'package:chat_app/view/auth/splash_view.dart';
+import 'package:chat_app/view/friends_view.dart';
 import 'package:get/get.dart';
 
 class AppPages {
@@ -42,6 +46,22 @@ Get.put(ProfileController());
         Get.put(MainController());
       })
     ),
+
+     GetPage(
+      name: AppRoutes.friends,
+      page: () => FriendsView(),
+      binding: BindingsBuilder((){
+        Get.put(FriendsController());
+      })
+    ), 
+
+     GetPage(
+      name: AppRoutes.usersList,
+      page: () => FindPeopleView(),
+      binding: BindingsBuilder((){
+        Get.put(UsersListController());
+      })
+    ), 
     /*GetPage(
       name: AppRoutes.home,
       page: () => HomeView(),
@@ -56,19 +76,7 @@ Get.put(ProfileController());
          GetPage(
       name: AppRoutes.chat,
       page: () => ChatView(),
-    ),    GetPage(
-      name: AppRoutes.usersList,
-      page: () => UsersListView(),
-      binding: BindingsBuilder((){
-        Get.put(UsersListController());
-      })
-    ),    GetPage(
-      name: AppRoutes.friends,
-      page: () => FriendsView(),
-      binding: BindingsBuilder((){
-        Get.put(FriendsController());
-      })
-    ),    GetPage(
+    ),        GetPage(
       name: AppRoutes.friendRequests,
       page: () => FriendRequestsView(),
       binding: BindingsBuilder((){
