@@ -1,6 +1,7 @@
 import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -34,20 +35,26 @@ class ProfileController extends GetxController {
     super.onClose();
   }
 
-  void _loadUserData() {
-    final currentUserId = _authController.user?.uid;
+void _loadUserData() {
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-    if (currentUserId != null) {
-      _currentUser.bindStream(_firestoreService.getUserStream(currentUserId));
+  print('PROFILE UID: $currentUserId');
 
-      ever(_currentUser, (UserModel? user) {
-        if (user != null) {
-          displayNameController.text = user.displayName;
-          emailController.text = user.email;
-        }
-      });
-    }
+  if (currentUserId != null) {
+    _currentUser.bindStream(
+      _firestoreService.getUserStream(currentUserId),
+    );
+
+    ever(_currentUser, (UserModel? user) {
+      print('FIRESTORE USER: $user');
+
+      if (user != null) {
+        displayNameController.text = user.displayName;
+        emailController.text = user.email;
+      }
+    });
   }
+}
 
   void toggleEditing() {
     _isEditing.value = !_isEditing.value;
@@ -158,7 +165,7 @@ class ProfileController extends GetxController {
   return 'Joined ${months[date.month - 1]} ${date.year}';
 }
 
-void clearError() {
+void _clearError() {
     _error.value = '';
   }
 

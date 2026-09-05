@@ -73,7 +73,7 @@ class ForgotPasswordController extends GetxController {
     return null;
   }
 
-  void _clearError() {
+  void clearError() {
     _error.value = '';
   }
 }

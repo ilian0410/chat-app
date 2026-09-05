@@ -32,19 +32,26 @@ class UserModel {
   };
 }
 
-  static UserModel fromMap(Map<String, dynamic> map) {
+
+static UserModel fromMap(Map<String, dynamic> map) {
   return UserModel(
     id: map['id'] ?? '',
     email: map['email'] ?? '',
     displayName: map['displayName'] ?? '',
     photoURL: map['photoURL'] ?? '',
     isOnline: map['isOnline'] ?? false,
-    lastSeen: map['lastSeen'] is String
-        ? DateTime.parse(map['lastSeen'])
-        : DateTime.fromMillisecondsSinceEpoch(map['lastSeen']),
-    createdAt: map['createdAt'] is String
-        ? DateTime.parse(map['createdAt'])
-        : DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+
+    lastSeen: map['lastSeen'] is Timestamp
+        ? (map['lastSeen'] as Timestamp).toDate()
+        : map['lastSeen'] is String
+            ? DateTime.parse(map['lastSeen'])
+            : DateTime.fromMillisecondsSinceEpoch(map['lastSeen']),
+
+    createdAt: map['createdAt'] is Timestamp
+        ? (map['createdAt'] as Timestamp).toDate()
+        : map['createdAt'] is String
+            ? DateTime.parse(map['createdAt'])
+            : DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
   );
 }
   

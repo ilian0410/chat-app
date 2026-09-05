@@ -191,7 +191,7 @@ class FirestoreService {
     }
   }
 
-  Stream<List<FriendRequestModel>> getFriendRequestsForUser(String userId) {
+  Stream<List<FriendRequestModel>> getFriendRequestsStream(String userId) {
     return _firestore
         .collection('friend_requests')
         .where('receiverId', isEqualTo: userId)
