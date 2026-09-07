@@ -60,7 +60,7 @@ class FriendRequestsController extends GetxController {
     );
   }
 
-  void changeTabIndex(int index) {
+  void changeTab(int index) {
     _selectedTabIndex.value = index;
   }
 
@@ -83,6 +83,7 @@ class FriendRequestsController extends GetxController {
       _isLoading.value = false;
     }
   }
+
   Future<void> declineFriendRequest(FriendRequestModel request) async {
     try {
       _isLoading.value = true;
@@ -114,6 +115,7 @@ class FriendRequestsController extends GetxController {
       _isLoading.value = false;
     }
   }
+
   String getRequestTimeText(DateTime ceatedAt) {
     final now = DateTime.now();
     final difference = now.difference(ceatedAt);
@@ -142,7 +144,7 @@ class FriendRequestsController extends GetxController {
     }
   }
 
- Color getStatusColor(FriendRequestStatus status) {
+  Color getStatusColor(FriendRequestStatus status) {
     switch (status) {
       case FriendRequestStatus.pending:
         return Colors.orange;
@@ -152,6 +154,7 @@ class FriendRequestsController extends GetxController {
         return Colors.redAccent;
     }
   }
+
   void clearError() {
     _error.value = '';
   }
