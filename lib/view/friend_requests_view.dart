@@ -113,9 +113,10 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
           Expanded(
             child: Obx(() {
               return IndexedStack(
+                index: controller.selectedTabIndex,
                 children: [
                   _buildReceivedRequestsList(),
-                 // _buildSentRequestsList(),
+                  _buildSendRequestsTab(),
                 ],
               );
             }),
@@ -149,12 +150,42 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
             isReceived: true,
             onAccept: () => controller.acceptRequest(request),
             onDecline: () => controller.declineFriendRequest(request),
-statusText: controller.getStatusText(request.status),
-statusColor: controller.getStatusColor(request.status),
           );
         },
         separatorBuilder: ((context, index) => SizedBox(height: 8)),
         itemCount: controller.receivedRequests.length,
+      );
+    });
+  }
+
+  Widget _buildSendRequestsTab() {
+    return Obx(() {
+      if (controller.receivedRequests.isEmpty) {
+        return _buildEmptyState(
+          icon: Icons.inbox,
+          title: 'No Sent requests',
+          message:
+              'Friend requests you send will appear here until they are accepted or declined.',
+        );
+      }
+      return ListView.separated(
+        itemBuilder: (context, index) {
+          final request = controller.sentRequests[index];
+          final receiver = controller.getUser(request.senderId);
+          if (receiver == null) {
+            return SizedBox.shrink();
+          }
+          return FriendRequestItem(
+            request: request,
+            user: receiver,
+            timeText: controller.getRequestTimeText(request.createdAt),
+            isReceived: false,
+            statusText: controller.getStatusText(request.status),
+            statusColor: controller.getStatusColor(request.status),
+          );
+        },
+        separatorBuilder: ((context, index) => SizedBox(height: 8)),
+        itemCount: controller.sentRequests.length,
       );
     });
   }
