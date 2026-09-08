@@ -283,16 +283,95 @@ class HomeController extends GetxController {
   void openChat(ChatModel chat) {
     final otherUser = getOtherUser(chat);
     if (otherUser != null) {
-     
       Get.toNamed(
         AppRoutes.chat,
-        arguments: {
-          'chatId': chat.id,
-          'otherUser': otherUser
-          }
-          );
+        arguments: {'chatId': chat.id, 'otherUser': otherUser},
+      );
     }
   }
 
+  void openFriends() {
+    Get.toNamed(AppRoutes.friends);
+  }
 
+  void openNotifications() {
+    Get.toNamed(AppRoutes.notifications);
+  }
+
+  Future<void> refreshChats() async {
+    _isLoading.value = true;
+
+    try {
+      await Future.delayed(Duration(seconds: 1));
+      if (_isSearching.value && _searchQuery.value.isNotEmpty) {
+        _performSearch(_searchQuery.value);
+      }
+    } catch (e) {
+      _error.value = 'Failed to refresh chats';
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  int getTotalUnreadCount() {
+    final currentUserId = _authController.user?.uid;
+    if (currentUserId == null) return 0;
+
+    int total = 0;
+    for (var chat in _allChats) {
+      total += chat.getUnreadCount(currentUserId);
+    }
+    return total;
+  }
+
+  int getUnreadNotificationsCount() {
+    return _notifications.where((notif) => !notif.isRead).length;
+  }
+
+  Future<void> deleteChat(ChatModel chat) async {
+    try {
+      final currentUserId = _authController.user?.uid;
+      if (currentUserId == null) return;
+      final otherUser = getOtherUser(chat);
+      final result = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('Delete Chat'),
+          content: Text(
+            'Are you sure you want to delete this chat with ${otherUser?.displayName ?? 'this user'} ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(result: false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Get.back(result: true),
+              child: Text('Delete', style: TextStyle(color: Colors.redAccent)),
+            ),
+          ],
+        ),
+      );
+      if (result == true) {
+        await _firestoreService.deleteChatForUser(chat.id, currentUserId);
+        Get.snackbar('Success', 'The chat has been deleted successfully.');
+      }
+    } catch (e) {
+      print(e.toString());
+      Get.snackbar('Error', 'Failed to delete chat.');
+      print(e.toString());
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  void clearError() {
+    _error.value = '';
+  }
+
+  @override
+  void onClose() {
+super.onClose();
+    
+
+  }
 }
