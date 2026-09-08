@@ -120,7 +120,7 @@ class ChatModel {
     );
   }
 
-  String getOtherParticipantId(String currentUserId) {
+  String getOtherParticipant(String currentUserId) {
     return participants.firstWhere(
       (id) => id != currentUserId,
       orElse: () => '',
