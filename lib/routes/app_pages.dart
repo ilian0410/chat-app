@@ -1,7 +1,10 @@
 import 'package:chat_app/controllers/change_password_controller.dart';
+import 'package:chat_app/controllers/chat_controller.dart';
 import 'package:chat_app/controllers/friend_requests_controller.dart';
 import 'package:chat_app/controllers/friends_controller.dart';
+import 'package:chat_app/controllers/home_controller.dart';
 import 'package:chat_app/controllers/main_controller.dart';
+import 'package:chat_app/controllers/notifications_controller.dart';
 import 'package:chat_app/controllers/users_list_controller.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/controllers/profile_controller.dart';
@@ -13,8 +16,11 @@ import 'package:chat_app/view/Profile/change_password_view.dart';
 import 'package:chat_app/view/Profile/profile_view.dart';
 import 'package:chat_app/view/auth/register_view.dart';
 import 'package:chat_app/view/auth/splash_view.dart';
+import 'package:chat_app/view/chat_view.dart';
 import 'package:chat_app/view/friend_requests_view.dart';
 import 'package:chat_app/view/friends_view.dart';
+import 'package:chat_app/view/notifications_view.dart';
+import 'package:chat_app/view/home_view.dart';
 import 'package:get/get.dart';
 
 class AppPages {
@@ -31,67 +37,67 @@ class AppPages {
       name: AppRoutes.profile,
       page: () => ProfileView(),
       binding: BindingsBuilder(() {
-Get.put(ProfileController());
+        Get.put(ProfileController());
       }),
     ),
     GetPage(
       name: AppRoutes.changePassword,
       page: () => ChangePasswordView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(ChangePasswordController());
-      })
-    ), 
- GetPage(
+      }),
+    ),
+    GetPage(
       name: AppRoutes.main,
       page: () => MainView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(MainController());
-      })
+      }),
     ),
 
-     GetPage(
+    GetPage(
       name: AppRoutes.friends,
       page: () => FriendsView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(FriendsController());
-      })
-    ), 
+      }),
+    ),
 
-     GetPage(
+    GetPage(
       name: AppRoutes.usersList,
       page: () => FindPeopleView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(UsersListController());
-      })
-    ), 
+      }),
+    ),
 
-      GetPage(
+    GetPage(
       name: AppRoutes.friendRequests,
       page: () => FriendRequestsView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(FriendRequestsController());
-      })
-    ),  
-    /*GetPage(
+      }),
+    ),
+    GetPage(
       name: AppRoutes.home,
       page: () => HomeView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(HomeController());
-      })
+      }),
     ),
-   
-   
-    
-    
-         GetPage(
+    GetPage(
       name: AppRoutes.chat,
       page: () => ChatView(),
-    ),        GetPage(
+      binding: BindingsBuilder(() {
+        Get.put(ChatController());
+      }),
+    ),
+    GetPage(
       name: AppRoutes.notifications,
       page: () => NotificationsView(),
-      binding: BindingsBuilder((){
+      binding: BindingsBuilder(() {
         Get.put(NotificationsController());
-      })
-    ),*/
+      }),
+    ),
   ];
 }

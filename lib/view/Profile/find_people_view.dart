@@ -27,8 +27,7 @@ class FindPeopleView extends GetView<UsersListController> {
                   return UserListItem(
                     user: user,
                     onTap: () {
-                      
-                      () => controller.handleRelationshipAction(user);
+                      controller.handleRelationshipAction(user);
                     },
                     controller: controller,
                   );

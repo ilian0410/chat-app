@@ -10,6 +10,8 @@ class FriendRequestItem extends StatelessWidget {
   final bool isReceived;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
+  final VoidCallback? onCancel;
+  final VoidCallback? onRemove;
   final String? statusText;
   final Color? statusColor;
 
@@ -21,6 +23,8 @@ class FriendRequestItem extends StatelessWidget {
     required this.isReceived,
     this.onAccept,
     this.onDecline,
+    this.onCancel,
+    this.onRemove,
     this.statusText,
     this.statusColor,
   });
@@ -106,6 +110,13 @@ class FriendRequestItem extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (onRemove != null)
+                  IconButton(
+                    tooltip: 'Remove request',
+                    onPressed: onRemove,
+                    icon: const Icon(Icons.delete_outline),
+                    color: AppTheme.textSecondaryColor,
+                  ),
               ],
             ),
             if (isReceived &&
@@ -146,44 +157,47 @@ class FriendRequestItem extends StatelessWidget {
                   ),
                 ],
               ),
-
             ] else if (!isReceived && statusText != null) ...[
-SizedBox(height: 12),
-Container(
-  padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-  decoration: BoxDecoration(
-    color: statusColor?.withOpacity(0.1) ?? Colors.grey.withOpacity(0.1),
-    borderRadius: BorderRadius.circular(8),
-    border: Border.all(
-      color: statusColor ?? Colors.grey,
-    ),
-  ),
-  child: Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(
-        _getStatusIcon(),
-        color: statusColor ,
-        size:16,
-      ),
-      SizedBox(width: 6),
-      Text(
-        statusText!,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: statusColor ?? AppTheme.textSecondaryColor,
-          fontWeight: FontWeight.w600,
-        ),
-      )
-    ],
-  ),
-)
-
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                decoration: BoxDecoration(
+                  color:
+                      statusColor?.withOpacity(0.1) ??
+                      Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: statusColor ?? Colors.grey),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_getStatusIcon(), color: statusColor, size: 16),
+                    SizedBox(width: 6),
+                    Text(
+                      statusText!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: statusColor ?? AppTheme.textSecondaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isReceived &&
+                  request.status == FriendRequestStatus.pending &&
+                  onCancel != null)
+                TextButton.icon(
+                  onPressed: onCancel,
+                  icon: const Icon(Icons.close),
+                  label: const Text('Cancel request'),
+                ),
             ],
-          ] 
+          ],
         ),
       ),
     );
   }
+
   IconData _getStatusIcon() {
     switch (request.status) {
       case FriendRequestStatus.pending:

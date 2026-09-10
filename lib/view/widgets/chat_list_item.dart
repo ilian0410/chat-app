@@ -1,5 +1,3 @@
-import 'dart:nativewrappers/_internal/vm/lib/ffi_native_type_patch.dart';
-
 import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:chat_app/controllers/home_controller.dart';
 import 'package:chat_app/models/chat_model.dart';
@@ -88,7 +86,6 @@ class ChatListItem extends StatelessWidget {
                           color: AppTheme.successColor,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
-                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
@@ -244,44 +241,44 @@ class ChatListItem extends StatelessWidget {
 
   void _showChatOptions(BuildContext context, HomeController homeController) {
     Get.bottomSheet(
-Container(
-  padding: EdgeInsets.all(20),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-  ),
-  child: Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
       Container(
-        width: 40, 
-        height : 4,
+        padding: EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: AppTheme.textSecondaryColor.withOpacity(0.3),
-          borderRadius: BorderRadius.circular(2),
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.textSecondaryColor.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: 20),
+            ListTile(
+              leading: Icon(Icons.delete_outline, color: AppTheme.errorColor),
+              title: Text('Delete Chat'),
+              subtitle: Text('This will delete the chat for you only'),
+              onTap: () {
+                Get.back();
+                homeController.deleteChat(chat);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.person_outline, color: AppTheme.primaryColor),
+              title: Text('View Profile'),
+              onTap: () {
+                Get.back();
+                //navigate to the other user's profile page
+              },
+            ),
+          ],
         ),
       ),
-      SizedBox(height: 20),
-      ListTile(
-        leading: Icon(Icons.delete_outline, color: AppTheme.errorColor),
-        title: Text('Delete Chat'),
-        subtitle: Text('This will delete the chat for you only'),
-        onTap: () {
-          Get.back();
-          homeController.deleteChat(chat);
-        },
-      ),
-      ListTile(
-        leading: Icon(Icons.person_outline, color: AppTheme.primaryColor),
-        title: Text('View Profile'),
-        onTap: () {
-          Get.back();
-          //navigate to the other user's profile page
-        },
-      ),
-    ],
-  )
-),
     );
   }
 }

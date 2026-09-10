@@ -50,7 +50,18 @@ class HomeController extends GetxController {
   void _loadChats() {
     final currentUserId = _authController.user?.uid;
     if (currentUserId != null) {
-      _allChats.bindStream(_firestoreService.getUserChatsStream(currentUserId));
+      _allChats.bindStream(
+        _firestoreService.getUserChatsStream(currentUserId).handleError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          _isLoading.value = false;
+          _error.value = _firestoreService.describeStreamError(
+            error,
+            'conversations',
+          );
+        }),
+      );
 
       ever(_allChats, (_) {
         if (_isSearching.value && _searchQuery.value.isNotEmpty) {
@@ -60,6 +71,12 @@ class HomeController extends GetxController {
 
       ever(_activeFilter, (_) {
         if (_searchQuery.value.isNotEmpty) {
+          _performSearch(_searchQuery.value);
+        }
+      });
+
+      ever(_users, (_) {
+        if (_isSearching.value && _searchQuery.value.isNotEmpty) {
           _performSearch(_searchQuery.value);
         }
       });
@@ -82,7 +99,15 @@ class HomeController extends GetxController {
     final currentUserId = _authController.user?.uid;
     if (currentUserId != null) {
       _notifications.bindStream(
-        _firestoreService.getNotificationsStream(currentUserId),
+        _firestoreService.getNotificationsStream(currentUserId).handleError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          _error.value = _firestoreService.describeStreamError(
+            error,
+            'notifications',
+          );
+        }),
       );
     }
   }
@@ -93,25 +118,7 @@ class HomeController extends GetxController {
       final otherUserId = chat.getOtherParticipant(currentUserId);
       return _users[otherUserId];
     }
-
-    String fromLastMessageTime(DateTime? time) {
-      if (time == null) {
-        return '';
-      }
-      final now = DateTime.now();
-      final difference = now.difference(time);
-      if (difference.inMinutes < 1) {
-        return 'Just now';
-      } else if (difference.inHours < 1) {
-        return '${difference.inMinutes} minutes ago';
-      } else if (difference.inDays < 1) {
-        return '${difference.inHours} hours ago';
-      } else if (difference.inDays < 7) {
-        return '${difference.inDays} days ago';
-      } else {
-        return '${time.day}/${time.month}/${time.year}';
-      }
-    }
+    return null;
   }
 
   List<ChatModel> _getFilteredChats() {
@@ -143,7 +150,8 @@ class HomeController extends GetxController {
     final now = DateTime.now();
     final threeDayAgo = now.subtract(Duration(days: 3));
     return chats.where((chat) {
-      return chat.lastMessageTime!.isAfter(threeDayAgo);
+      final lastMessageTime = chat.lastMessageTime;
+      return lastMessageTime != null && lastMessageTime.isAfter(threeDayAgo);
     }).toList();
   }
 
@@ -186,11 +194,11 @@ class HomeController extends GetxController {
     _filteredChats.value = _allChats.where((chat) {
       final otherUser = getOtherUser(chat);
       if (otherUser == null) return false;
-      final displayName =
-          otherUser.displayName.toLowerCase().contains(lowercaseQuery) ?? false;
+      final displayName = otherUser.displayName.toLowerCase().contains(
+        lowercaseQuery,
+      );
 
-      final emailMatch =
-          otherUser.email.toLowerCase().contains(lowercaseQuery) ?? false;
+      final emailMatch = otherUser.email.toLowerCase().contains(lowercaseQuery);
       final lastMessageMatch =
           chat.lastMessage?.toLowerCase().contains(lowercaseQuery) ?? false;
       return displayName || emailMatch || lastMessageMatch;
@@ -206,10 +214,8 @@ class HomeController extends GetxController {
 
       if (userA == null || userB == null) return 0;
 
-      final exactMatchA =
-          userA.displayName.toLowerCase().startsWith(query) ?? false;
-      final exactMatchB =
-          userB.displayName.toLowerCase().startsWith(query) ?? false;
+      final exactMatchA = userA.displayName.toLowerCase().startsWith(query);
+      final exactMatchB = userB.displayName.toLowerCase().startsWith(query);
 
       if (exactMatchA && !exactMatchB) return -1;
       if (!exactMatchA && exactMatchB) return 1;
@@ -294,6 +300,10 @@ class HomeController extends GetxController {
     Get.toNamed(AppRoutes.friends);
   }
 
+  void openFindPeople() {
+    Get.toNamed(AppRoutes.usersList);
+  }
+
   void openNotifications() {
     Get.toNamed(AppRoutes.notifications);
   }
@@ -370,8 +380,6 @@ class HomeController extends GetxController {
 
   @override
   void onClose() {
-super.onClose();
-    
-
+    super.onClose();
   }
 }
