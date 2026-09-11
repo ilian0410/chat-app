@@ -10,6 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final Map<String, Future<UserModel?>> _userLookupCache = {};
 
   String describeStreamError(Object error, String resource) {
     if (error is FirebaseException && error.code == 'failed-precondition') {
@@ -27,6 +28,15 @@ class FirestoreService {
   }
 
   Future<UserModel?> getUser(String userId) async {
+    final cached = _userLookupCache[userId];
+    if (cached != null) return cached;
+
+    final lookup = _getUserFromFirestore(userId);
+    _userLookupCache[userId] = lookup;
+    return lookup;
+  }
+
+  Future<UserModel?> _getUserFromFirestore(String userId) async {
     try {
       DocumentSnapshot doc = await _firestore
           .collection('users')
@@ -74,12 +84,75 @@ class FirestoreService {
         .map((doc) => doc.exists ? UserModel.fromMap(doc.data()!) : null);
   }
 
+  Stream<ChatModel?> getChatStream(String chatId) {
+    return _firestore
+        .collection('chats')
+        .doc(chatId)
+        .snapshots()
+        .map(
+          (doc) => doc.exists
+              ? ChatModel.fromMap(doc.data() as Map<String, dynamic>)
+              : null,
+        );
+  }
+
+  Future<void> updateTyping(String chatId, String userId, bool isTyping) {
+    return _firestore.collection('chats').doc(chatId).update({
+      'typing.$userId': isTyping,
+    });
+  }
+
   Future<void> updateUser(UserModel user) async {
     try {
       await _firestore.collection('users').doc(user.id).update(user.toMap());
+      _userLookupCache.remove(user.id);
     } catch (e) {
       throw Exception('Failed to update user: ${e.toString()}');
     }
+  }
+
+  Future<void> setChatPinned(String chatId, String userId, bool pinned) async {
+    await _firestore.collection('chats').doc(chatId).update({
+      'pinnedBy.$userId': pinned,
+    });
+  }
+
+  Future<bool> areUsersBlocked(String userId, String otherUserId) async {
+    final users = await Future.wait([
+      _getUserFromFirestore(userId),
+      _getUserFromFirestore(otherUserId),
+    ]);
+    final user = users[0];
+    final otherUser = users[1];
+    return user?.blockedUserIds.contains(otherUserId) == true ||
+        otherUser?.blockedUserIds.contains(userId) == true;
+  }
+
+  Stream<bool> getBlockedStatusStream(String userId, String otherUserId) {
+    return getUserStream(
+      userId,
+    ).map((user) => user?.blockedUserIds.contains(otherUserId) ?? false);
+  }
+
+  Future<void> setUserBlocked(
+    String userId,
+    String otherUserId,
+    bool blocked,
+  ) async {
+    final batch = _firestore.batch();
+    final userRef = _firestore.collection('users').doc(userId);
+    final otherRef = _firestore.collection('users').doc(otherUserId);
+    final operation = blocked
+        ? FieldValue.arrayUnion([otherUserId])
+        : FieldValue.arrayRemove([otherUserId]);
+    final reverseOperation = blocked
+        ? FieldValue.arrayUnion([userId])
+        : FieldValue.arrayRemove([userId]);
+    batch.update(userRef, {'blockedUserIds': operation});
+    batch.update(otherRef, {'blockedUserIds': reverseOperation});
+    await batch.commit();
+    _userLookupCache.remove(userId);
+    _userLookupCache.remove(otherUserId);
   }
 
   Stream<List<UserModel>> getAllUsersStream() {
@@ -96,6 +169,9 @@ class FirestoreService {
   // friend request collection
   Future<void> sendFriendRequest(FriendRequestModel request) async {
     try {
+      if (await areUsersBlocked(request.senderId, request.receiverId)) {
+        throw Exception('This user is blocked.');
+      }
       await _firestore
           .collection('friend_requests')
           .doc(request.id)
@@ -195,6 +271,7 @@ class FirestoreService {
               body:
                   'Your friend request has been accepted by ${receiver?.displayName ?? 'the recipient'}',
               type: NotificationType.friendRequestAccepted,
+              data: {'senderId': request.receiverId},
               createdAt: DateTime.now(),
             ),
           );
@@ -212,6 +289,7 @@ class FirestoreService {
               body:
                   'Your friend request has been declined by ${receiver?.displayName ?? 'the recipient'}',
               type: NotificationType.friendRequestDeclined,
+              data: {'senderId': request.receiverId},
               createdAt: DateTime.now(),
             ),
           );
@@ -480,6 +558,8 @@ class FirestoreService {
           deletedBy: {userId1: false, userId2: false},
           deletedAt: {userId1: null, userId2: null},
           lastSeenBy: {userId1: null, userId2: null},
+          typing: {userId1: false, userId2: false},
+          pinnedBy: {userId1: false, userId2: false},
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -596,39 +676,66 @@ class FirestoreService {
     }
   }
 
+  Future<void> markConversationAsRead(
+    String chatId,
+    String currentUserId,
+    String otherUserId,
+  ) async {
+    try {
+      final snapshot = await _firestore
+          .collection('messages')
+          .where('receiverId', isEqualTo: currentUserId)
+          .where('senderId', isEqualTo: otherUserId)
+          .get();
+      final batch = _firestore.batch();
+      for (final document in snapshot.docs) {
+        final data = document.data();
+        if (data['isRead'] != true) {
+          batch.update(document.reference, {'isRead': true});
+        }
+      }
+      batch.update(_firestore.collection('chats').doc(chatId), {
+        'unreadCount.$currentUserId': 0,
+        'lastSeenBy.$currentUserId': DateTime.now().millisecondsSinceEpoch,
+      });
+      await batch.commit();
+    } catch (e) {
+      throw Exception('Failed to mark conversation as read: ${e.toString()}');
+    }
+  }
+
   //Messages collection
 
   Future<void> sendMessage(String chatId, MessageModel message) async {
     try {
-      await _firestore
-          .collection('messages')
-          .doc(message.id)
-          .set(message.toMap());
+      if (await areUsersBlocked(message.senderId, message.receiverId)) {
+        throw Exception(
+          'Messaging is unavailable because one user is blocked.',
+        );
+      }
+      final messageData = message.toMap()..['isDelivered'] = true;
+      await _firestore.collection('messages').doc(message.id).set(messageData);
       final resolvedChatId = chatId;
 
       await updateChatLastMessage(resolvedChatId, message);
       await updateUserLastSeen(resolvedChatId, message.senderId);
       await incrementUnreadCount(resolvedChatId, message.receiverId);
-      final sender = await getUser(message.senderId);
-      await createNotification(
-        NotificationModel(
-          id: message.id,
-          userId: message.receiverId,
-          title: sender == null
-              ? 'New message'
-              : 'New message from ${sender.displayName}',
-          body: message.content,
-          type: NotificationType.newMessage,
-          data: {
-            'chatId': resolvedChatId,
-            'senderId': message.senderId,
-            'receiverId': message.receiverId,
-          },
-          createdAt: message.timestamp,
-        ),
-      );
     } catch (e) {
       throw Exception('Failed to send message: ${e.toString()}');
+    }
+  }
+
+  Future<void> setMessageReaction(
+    String messageId,
+    String userId,
+    String? reaction,
+  ) async {
+    try {
+      await _firestore.collection('messages').doc(messageId).update({
+        'reactions.$userId': reaction == null ? FieldValue.delete() : reaction,
+      });
+    } catch (e) {
+      throw Exception('Failed to update message reaction: ${e.toString()}');
     }
   }
 
@@ -664,6 +771,18 @@ class FirestoreService {
                 }
               }
               if (includeMessage) {
+                final deletedFor = List<String>.from(
+                  (doc.data()['deletedFor'] as List<dynamic>?) ?? const [],
+                );
+                if (deletedFor.contains(userId1)) includeMessage = false;
+                if (doc.data()['deletedForEveryone'] == true) {
+                  message = message.copyWith(
+                    content: 'This message was deleted',
+                    isEdited: true,
+                  );
+                }
+              }
+              if (includeMessage) {
                 messages.add(message);
               }
             }
@@ -671,6 +790,93 @@ class FirestoreService {
           messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
           return messages;
         });
+  }
+
+  Future<void> deleteMessageForMe(String messageId, String userId) {
+    return _redactDeletedMessage(messageId, deletedFor: userId);
+  }
+
+  Future<void> deleteMessageForEveryone(String messageId) {
+    return _redactDeletedMessage(messageId, forEveryone: true);
+  }
+
+  Future<void> _redactDeletedMessage(
+    String messageId, {
+    String? deletedFor,
+    bool forEveryone = false,
+  }) async {
+    final messageRef = _firestore.collection('messages').doc(messageId);
+    final snapshot = await messageRef.get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data()!;
+    final senderId = data['senderId'] as String?;
+    final receiverId = data['receiverId'] as String?;
+    final timestamp = data['timestamp'] as int?;
+    if (senderId == null || receiverId == null || timestamp == null) return;
+
+    final updates = <String, dynamic>{
+      'content': 'Message deleted',
+      'replyToContent': FieldValue.delete(),
+    };
+    if (forEveryone) {
+      updates['deletedForEveryone'] = true;
+    } else if (deletedFor != null) {
+      updates['deletedFor'] = FieldValue.arrayUnion([deletedFor]);
+    }
+    await messageRef.update(updates);
+
+    final chatId = _chatIdFor(senderId, receiverId);
+    final chatRef = _firestore.collection('chats').doc(chatId);
+    final chatSnapshot = await chatRef.get();
+    final chatData = chatSnapshot.data();
+    if (chatData != null) {
+      final chatUpdates = <String, dynamic>{};
+      if (_matchesMessageTimestamp(chatData['lastMessageTime'], timestamp)) {
+        chatUpdates.addAll({
+          'lastMessage': 'Message deleted',
+          'lastMessageTime': timestamp,
+          'lastMessageSenderId': senderId,
+        });
+      }
+      if (deletedFor == receiverId) {
+        final unreadCount =
+            (chatData['unreadCount'] as Map<String, dynamic>?)?[receiverId]
+                as int? ??
+            0;
+        chatUpdates['unreadCount.$receiverId'] = unreadCount > 0
+            ? unreadCount - 1
+            : 0;
+      }
+      if (chatUpdates.isNotEmpty) await chatRef.update(chatUpdates);
+    }
+    final notificationRef = _firestore
+        .collection('notifications')
+        .doc(messageId);
+    final notificationSnapshot = await notificationRef.get();
+    if (notificationSnapshot.exists) {
+      await notificationRef.update({
+        'body': 'Message deleted',
+        'isRead': true,
+        'data.deletedMessage': true,
+      });
+    }
+  }
+
+  bool _matchesMessageTimestamp(dynamic storedTimestamp, int messageTimestamp) {
+    if (storedTimestamp is int) return storedTimestamp == messageTimestamp;
+    if (storedTimestamp is double) {
+      return storedTimestamp.toInt() == messageTimestamp;
+    }
+    if (storedTimestamp is Timestamp) {
+      return storedTimestamp.millisecondsSinceEpoch == messageTimestamp;
+    }
+    return false;
+  }
+
+  String _chatIdFor(String userId1, String userId2) {
+    final participants = [userId1, userId2]..sort();
+    return '${participants[0]}_${participants[1]}';
   }
 
   Future<void> markMessageAsRead(String messageId) async {
@@ -706,6 +912,7 @@ class FirestoreService {
   //notifications collection
 
   Future<void> createNotification(NotificationModel notification) async {
+    if (notification.type == NotificationType.newMessage) return;
     try {
       await _firestore
           .collection('notifications')
@@ -722,11 +929,71 @@ class FirestoreService {
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => NotificationModel.fromMap(doc.data()))
-              .toList(),
+        .asyncMap((snapshot) async {
+          final notifications = <NotificationModel>[];
+          for (final doc in snapshot.docs) {
+            var notification = NotificationModel.fromMap(doc.data());
+            if (notification.type == NotificationType.newMessage) continue;
+            final actorId = _notificationActorId(notification);
+            final actor = actorId == null ? null : await getUser(actorId);
+            notification = _humanizeNotification(
+              notification,
+              actor?.displayName,
+            );
+            notifications.add(notification);
+          }
+          return notifications;
+        });
+  }
+
+  String? _notificationActorId(NotificationModel notification) {
+    final data = notification.data;
+    for (final key in const ['senderId', 'userId', 'actorId']) {
+      final value = data[key];
+      if (value is String && value.isNotEmpty) return value;
+    }
+    final markerIndex = notification.body.indexOf(' by ');
+    if (markerIndex >= 0) {
+      final legacyId = notification.body.substring(markerIndex + 4).trim();
+      if (legacyId.isNotEmpty) return legacyId;
+    }
+    return null;
+  }
+
+  NotificationModel _humanizeNotification(
+    NotificationModel notification,
+    String? displayName,
+  ) {
+    final name = displayName?.trim().isNotEmpty == true
+        ? displayName!.trim()
+        : 'this user';
+    switch (notification.type) {
+      case NotificationType.newMessage:
+        return notification.copyWith(
+          title: 'New message from $name',
+          body:
+              notification.data['deletedMessage'] == true ||
+                  notification.body == 'Message deleted'
+              ? 'Message deleted'
+              : notification.body,
         );
+      case NotificationType.friendRequest:
+        return notification.copyWith(
+          body: 'You have a new friend request from $name',
+        );
+      case NotificationType.friendRequestAccepted:
+        return notification.copyWith(
+          body: 'Your friend request has been accepted by $name',
+        );
+      case NotificationType.friendRequestDeclined:
+        return notification.copyWith(
+          body: 'Your friend request has been declined by $name',
+        );
+      case NotificationType.friendRemoved:
+        return notification.copyWith(
+          body: 'You have been removed from $name\'s friend list.',
+        );
+    }
   }
 
   Future<void> deleteNotificationsByTypeAndUser(

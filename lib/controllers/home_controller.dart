@@ -123,6 +123,19 @@ class HomeController extends GetxController {
 
   List<ChatModel> _getFilteredChats() {
     List<ChatModel> baseList = _isSearching.value ? _filteredChats : _allChats;
+    final currentUserId = _authController.user?.uid;
+    if (currentUserId != null) {
+      baseList = List<ChatModel>.from(baseList)
+        ..sort((a, b) {
+          final pinned = (b.isPinnedBy(currentUserId) ? 1 : 0).compareTo(
+            a.isPinnedBy(currentUserId) ? 1 : 0,
+          );
+          if (pinned != 0) return pinned;
+          return (b.lastMessageTime ?? DateTime(0)).compareTo(
+            a.lastMessageTime ?? DateTime(0),
+          );
+        });
+    }
     switch (_activeFilter.value) {
       case "Unread":
         return _applyUnreadFilter(baseList);
@@ -214,6 +227,10 @@ class HomeController extends GetxController {
 
       if (userA == null || userB == null) return 0;
 
+      final pinnedA = a.isPinnedBy(_authController.user?.uid ?? '');
+      final pinnedB = b.isPinnedBy(_authController.user?.uid ?? '');
+      if (pinnedA != pinnedB) return pinnedB ? 1 : -1;
+
       final exactMatchA = userA.displayName.toLowerCase().startsWith(query);
       final exactMatchB = userB.displayName.toLowerCase().startsWith(query);
 
@@ -293,6 +310,20 @@ class HomeController extends GetxController {
         AppRoutes.chat,
         arguments: {'chatId': chat.id, 'otherUser': otherUser},
       );
+    }
+  }
+
+  Future<void> togglePinned(ChatModel chat) async {
+    final userId = _authController.user?.uid;
+    if (userId == null) return;
+    try {
+      await _firestoreService.setChatPinned(
+        chat.id,
+        userId,
+        !chat.isPinnedBy(userId),
+      );
+    } catch (e) {
+      _error.value = 'Unable to update pinned conversation.';
     }
   }
 

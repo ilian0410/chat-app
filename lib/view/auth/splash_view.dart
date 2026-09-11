@@ -1,10 +1,8 @@
 import 'package:chat_app/controllers/auth_controller.dart';
-import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
 
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -39,79 +37,77 @@ class _SplashViewState extends State<SplashView>
 
   void _checkAuthAndNavigate() async {
     await Future.delayed(const Duration(seconds: 3));
-    final authController = Get.put(AuthController(), permanent: true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if(authController.isAuthenticated){
-      Get.offAllNamed(AppRoutes.main); 
-
-    } else {
-      Get.offAllNamed(AppRoutes.login);
+    if (!Get.isRegistered<AuthController>()) {
+      Get.put(AuthController(), permanent: true);
     }
   }
-@override
-void dispose() {
+
+  @override
+  void dispose() {
     _animationController.dispose();
     super.dispose();
-  } 
-@override
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.primaryColor,
       body: Center(
-        child: AnimatedBuilder(animation: _animationController, 
-        builder:(context,child){
-          return FadeTransition(opacity: _fadeAnimation,
-          child: ScaleTransition(scale: _scaleAnimation,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration:  BoxDecoration(
-                  color: Colors.white,
-borderRadius:  BorderRadius.circular(30)   ,
-boxShadow: [
-  BoxShadow(
-    color: Colors.black26,
-    blurRadius: 10,
-    offset: Offset(0, 4),
-  )
-]
-            ),
-            child: Icon(
-              Icons.chat_bubble_rounded,
-              size:60,  
-              ) ,
+        child: AnimatedBuilder(
+          animation: _animationController,
+          builder: (context, child) {
+            return FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black26,
+                            blurRadius: 10,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(Icons.chat_bubble_rounded, size: 60),
+                    ),
+                    SizedBox(height: 32),
+                    Text(
+                      "Chat App",
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    SizedBox(height: 32),
+                    Text(
+                      "connect with your friends and family",
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withOpacity(0.8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 64),
+                    CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 4,
+                    ),
+                  ],
+                ),
               ),
-             SizedBox(height: 32,),
-             Text(
-              "Chat App",
-              style: Theme.of(  context).textTheme.headlineMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.bold
-              ),
-              
-             ),
-             SizedBox(height: 32,),
-             Text("connect with your friends and family",
-             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity( 0.8),
-              fontWeight: FontWeight.w600
-             ),
-              ),
-              SizedBox(height: 64,),
-              CircularProgressIndicator(
-              color: Colors.white,
-              strokeWidth: 4,
-              )
-            ],
-          )
-          )
             );
-        }
-        )
-      )
+          },
+        ),
+      ),
     );
   }
 }

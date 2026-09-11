@@ -12,6 +12,7 @@ class ProfileController extends GetxController {
   final FirestoreService _firestoreService = FirestoreService();
   final AuthController _authController = Get.find<AuthController>();
   final TextEditingController displayNameController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final RxBool _isLoading = false.obs;
   final RxBool _isEditing = false.obs;
@@ -32,29 +33,30 @@ class ProfileController extends GetxController {
   @override
   void onClose() {
     emailController.dispose();
+    displayNameController.dispose();
+    bioController.dispose();
     super.onClose();
   }
 
-void _loadUserData() {
-  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  void _loadUserData() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
-  print('PROFILE UID: $currentUserId');
+    print('PROFILE UID: $currentUserId');
 
-  if (currentUserId != null) {
-    _currentUser.bindStream(
-      _firestoreService.getUserStream(currentUserId),
-    );
+    if (currentUserId != null) {
+      _currentUser.bindStream(_firestoreService.getUserStream(currentUserId));
 
-    ever(_currentUser, (UserModel? user) {
-      print('FIRESTORE USER: $user');
+      ever(_currentUser, (UserModel? user) {
+        print('FIRESTORE USER: $user');
 
-      if (user != null) {
-        displayNameController.text = user.displayName;
-        emailController.text = user.email;
-      }
-    });
+        if (user != null) {
+          displayNameController.text = user.displayName;
+          bioController.text = user.bio;
+          emailController.text = user.email;
+        }
+      });
+    }
   }
-}
 
   void toggleEditing() {
     _isEditing.value = !_isEditing.value;
@@ -62,6 +64,7 @@ void _loadUserData() {
       final user = _currentUser.value;
       if (user != null) {
         displayNameController.text = user.displayName;
+        bioController.text = user.bio;
         emailController.text = user.email;
       }
     }
@@ -75,6 +78,7 @@ void _loadUserData() {
       if (user == null) return;
       final updatedUser = user.copyWith(
         displayName: displayNameController.text,
+        bio: bioController.text.trim(),
       );
       await _firestoreService.updateUser(updatedUser);
       _isEditing.value = false;
@@ -120,7 +124,10 @@ void _loadUserData() {
             TextButton(
               style: TextButton.styleFrom(backgroundColor: Colors.redAccent),
               onPressed: () => Get.back(result: true),
-              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+              child: const Text(
+                'Delete',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -128,7 +135,7 @@ void _loadUserData() {
 
       if (result == true) {
         _isLoading.value = true;
-      await _authController.deleteAccount();
+        await _authController.deleteAccount();
       }
     } catch (e) {
       Get.snackbar(
@@ -140,33 +147,33 @@ void _loadUserData() {
       );
     }
   }
+
   String getJoinedData() {
-  final user = _currentUser.value;
+    final user = _currentUser.value;
 
-  if (user == null) return '';
+    if (user == null) return '';
 
-  final date = user.createdAt;
+    final date = user.createdAt;
 
-  final months = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
-  ];
+    final months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
 
-  return 'Joined ${months[date.month - 1]} ${date.year}';
-}
-
-void _clearError() {
-    _error.value = '';
+    return 'Joined ${months[date.month - 1]} ${date.year}';
   }
 
+  void _clearError() {
+    _error.value = '';
+  }
 }

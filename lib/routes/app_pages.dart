@@ -14,6 +14,7 @@ import 'package:chat_app/view/auth/forgot_password_view.dart';
 import 'package:chat_app/view/auth/login_view.dart';
 import 'package:chat_app/view/Profile/change_password_view.dart';
 import 'package:chat_app/view/Profile/profile_view.dart';
+import 'package:chat_app/view/Profile/user_profile_view.dart';
 import 'package:chat_app/view/auth/register_view.dart';
 import 'package:chat_app/view/auth/splash_view.dart';
 import 'package:chat_app/view/chat_view.dart';
@@ -40,6 +41,7 @@ class AppPages {
         Get.put(ProfileController());
       }),
     ),
+    GetPage(name: AppRoutes.userProfile, page: () => UserProfileView()),
     GetPage(
       name: AppRoutes.changePassword,
       page: () => ChangePasswordView(),

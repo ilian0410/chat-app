@@ -33,7 +33,18 @@ class NotificationsController extends GetxController {
 
   Future<void> markAsRead(NotificationModel notification) async {
     if (notification.isRead) return;
-    await _firestoreService.markNotificationAsRead(notification.id);
+    final index = notifications.indexWhere(
+      (item) => item.id == notification.id,
+    );
+    if (index >= 0) {
+      notifications[index] = notification.copyWith(isRead: true);
+    }
+    try {
+      await _firestoreService.markNotificationAsRead(notification.id);
+    } catch (e) {
+      if (index >= 0) notifications[index] = notification;
+      rethrow;
+    }
   }
 
   Future<void> markAllAsRead() async {
@@ -44,31 +55,22 @@ class NotificationsController extends GetxController {
   }
 
   Future<void> delete(NotificationModel notification) async {
-    await _firestoreService.deleteNotification(notification.id);
+    final index = notifications.indexWhere(
+      (item) => item.id == notification.id,
+    );
+    notifications.removeWhere((item) => item.id == notification.id);
+    try {
+      await _firestoreService.deleteNotification(notification.id);
+    } catch (e) {
+      if (index >= 0) notifications.insert(index, notification);
+      rethrow;
+    }
   }
 
   Future<void> openNotification(NotificationModel notification) async {
     try {
       await markAsRead(notification);
-      final chatId = notification.data['chatId'];
-      if (notification.type == NotificationType.newMessage &&
-          chatId is String &&
-          chatId.isNotEmpty) {
-        final senderId = notification.data['senderId'];
-        if (senderId is! String || senderId.isEmpty) {
-          error.value = 'This message notification is missing its sender.';
-          return;
-        }
-        final sender = await _firestoreService.getUser(senderId);
-        if (sender == null) {
-          error.value = 'The sender for this notification is unavailable.';
-          return;
-        }
-        Get.toNamed(
-          AppRoutes.chat,
-          arguments: {'chatId': chatId, 'otherUser': sender},
-        );
-      } else if (notification.type == NotificationType.friendRequest) {
+      if (notification.type == NotificationType.friendRequest) {
         Get.toNamed(AppRoutes.friendRequests);
       } else if (notification.type == NotificationType.friendRequestAccepted ||
           notification.type == NotificationType.friendRequestDeclined ||

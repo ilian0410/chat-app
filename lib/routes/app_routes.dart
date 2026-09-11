@@ -7,11 +7,10 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String changePassword = '/change-password';
   static const String profile = '/profile';
+  static const String userProfile = '/user-profile';
   static const String chat = '/chat';
   static const String usersList = '/users-list';
-  static const String friends= '/friends';
-  static const String friendRequests= '/friend-requests';
-  static const String notifications= '/notifications';
-
-
+  static const String friends = '/friends';
+  static const String friendRequests = '/friend-requests';
+  static const String notifications = '/notifications';
 }

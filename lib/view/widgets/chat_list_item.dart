@@ -3,6 +3,7 @@ import 'package:chat_app/controllers/home_controller.dart';
 import 'package:chat_app/models/chat_model.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/theme/app_theme.dart';
+import 'package:chat_app/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -111,6 +112,11 @@ class ChatListItem extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (chat.isPinnedBy(currentUserId))
+                          const Padding(
+                            padding: EdgeInsets.only(left: 6),
+                            child: Icon(Icons.push_pin, size: 15),
+                          ),
                         if (lastMessageTime.isNotEmpty)
                           Text(
                             lastMessageTime,
@@ -260,6 +266,23 @@ class ChatListItem extends StatelessWidget {
             ),
             SizedBox(height: 20),
             ListTile(
+              leading: Icon(
+                chat.isPinnedBy(Get.find<AuthController>().user?.uid ?? '')
+                    ? Icons.push_pin_outlined
+                    : Icons.push_pin,
+                color: AppTheme.primaryColor,
+              ),
+              title: Text(
+                chat.isPinnedBy(Get.find<AuthController>().user?.uid ?? '')
+                    ? 'Unpin conversation'
+                    : 'Pin conversation',
+              ),
+              onTap: () {
+                Get.back();
+                homeController.togglePinned(chat);
+              },
+            ),
+            ListTile(
               leading: Icon(Icons.delete_outline, color: AppTheme.errorColor),
               title: Text('Delete Chat'),
               subtitle: Text('This will delete the chat for you only'),
@@ -273,7 +296,10 @@ class ChatListItem extends StatelessWidget {
               title: Text('View Profile'),
               onTap: () {
                 Get.back();
-                //navigate to the other user's profile page
+                Get.toNamed(
+                  AppRoutes.userProfile,
+                  arguments: {'user': otherUser},
+                );
               },
             ),
           ],

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:chat_app/models/message_model.dart';
+import 'package:chat_app/models/chat_model.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/services/firestore_service.dart';
 import 'package:get/get.dart';
@@ -16,7 +17,14 @@ class ChatController extends GetxController {
   final RxBool isLoading = true.obs;
   final RxBool isSending = false.obs;
   final RxString error = ''.obs;
+  final RxBool isOtherUserTyping = false.obs;
+  final Rx<UserModel?> presenceUser = Rx<UserModel?>(null);
+  final Rx<MessageModel?> replyTo = Rx<MessageModel?>(null);
+  final RxBool isBlocked = false.obs;
   StreamSubscription<List<MessageModel>>? _messagesSubscription;
+  StreamSubscription<ChatModel?>? _chatSubscription;
+  StreamSubscription<UserModel?>? _userSubscription;
+  StreamSubscription<bool>? _blockedSubscription;
   final Set<String> _readMessageIds = <String>{};
   bool _isMarkingMessagesRead = false;
 
@@ -38,13 +46,50 @@ class ChatController extends GetxController {
       isLoading.value = false;
     } else {
       _loadMessages();
+      _loadPresence();
     }
+  }
+
+  void _loadPresence() {
+    final user = otherUser;
+    if (user == null || chatId == null) return;
+    if (_chatSubscription != null || _userSubscription != null) return;
+    _chatSubscription = _firestoreService.getChatStream(chatId!).listen((chat) {
+      isOtherUserTyping.value = chat?.isTyping(user.id) ?? false;
+    });
+    _userSubscription = _firestoreService.getUserStream(user.id).listen((
+      value,
+    ) {
+      if (value != null) {
+        otherUser = value;
+        presenceUser.value = value;
+      }
+    });
+    _blockedSubscription = _firestoreService
+        .getBlockedStatusStream(currentUserId, user.id)
+        .listen((blocked) => isBlocked.value = blocked);
   }
 
   @override
   void onReady() {
     super.onReady();
+    _markConversationAsRead();
     markMessagesAsRead();
+  }
+
+  Future<void> _markConversationAsRead() async {
+    final user = otherUser;
+    final id = chatId;
+    if (currentUserId.isEmpty || user == null || id == null) return;
+    try {
+      await _firestoreService.markConversationAsRead(
+        id,
+        currentUserId,
+        user.id,
+      );
+    } catch (e) {
+      error.value = e.toString();
+    }
   }
 
   void _loadMessages() {
@@ -77,6 +122,7 @@ class ChatController extends GetxController {
     if (trimmedContent.isEmpty ||
         currentUserId.isEmpty ||
         user == null ||
+        isBlocked.value ||
         isSending.value) {
       return;
     }
@@ -94,14 +140,71 @@ class ChatController extends GetxController {
         receiverId: user.id,
         content: trimmedContent,
         timestamp: DateTime.now(),
+        replyToMessageId: replyTo.value?.id,
+        replyToContent: replyTo.value?.content,
+        replyToSenderId: replyTo.value?.senderId,
       );
       await _firestoreService.sendMessage(chatId!, message);
+      replyTo.value = null;
     } catch (e) {
       error.value = e.toString();
       rethrow;
     } finally {
       isSending.value = false;
     }
+  }
+
+  Future<void> setTyping(bool value) async {
+    final user = otherUser;
+    if (currentUserId.isEmpty || user == null) return;
+    try {
+      if (chatId == null) {
+        chatId = await _firestoreService.createOrGetChat(
+          currentUserId,
+          user.id,
+        );
+        _loadPresence();
+      }
+      await _firestoreService.updateTyping(chatId!, currentUserId, value);
+    } catch (_) {}
+  }
+
+  void selectReply(MessageModel message) => replyTo.value = message;
+
+  void clearReply() => replyTo.value = null;
+
+  Future<void> setReaction(MessageModel message, String? reaction) async {
+    if (currentUserId.isEmpty) return;
+    try {
+      await _firestoreService.setMessageReaction(
+        message.id,
+        currentUserId,
+        reaction,
+      );
+    } catch (e) {
+      error.value = e.toString();
+    }
+  }
+
+  Future<void> toggleBlocked() async {
+    final user = otherUser;
+    if (user == null || currentUserId.isEmpty) return;
+    try {
+      final blocked = !isBlocked.value;
+      await _firestoreService.setUserBlocked(currentUserId, user.id, blocked);
+      isBlocked.value = blocked;
+    } catch (e) {
+      error.value = e.toString();
+    }
+  }
+
+  Future<void> deleteForMe(MessageModel message) async {
+    await _firestoreService.deleteMessageForMe(message.id, currentUserId);
+  }
+
+  Future<void> deleteForEveryone(MessageModel message) async {
+    if (message.senderId != currentUserId) return;
+    await _firestoreService.deleteMessageForEveryone(message.id);
   }
 
   Future<void> markMessagesAsRead() async {
@@ -136,6 +239,10 @@ class ChatController extends GetxController {
   @override
   void onClose() {
     _messagesSubscription?.cancel();
+    _chatSubscription?.cancel();
+    _userSubscription?.cancel();
+    _blockedSubscription?.cancel();
+    setTyping(false);
     super.onClose();
   }
 }

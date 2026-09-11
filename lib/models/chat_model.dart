@@ -9,6 +9,8 @@ class ChatModel {
   final Map<String, bool> deletedBy;
   final Map<String, DateTime?> deletedAt;
   final Map<String, DateTime?> lastSeenBy;
+  final Map<String, bool> typing;
+  final Map<String, bool> pinnedBy;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -22,6 +24,8 @@ class ChatModel {
     this.deletedBy = const {},
     this.deletedAt = const {},
     this.lastSeenBy = const {},
+    this.typing = const {},
+    this.pinnedBy = const {},
     required this.createdAt,
     required this.updatedAt,
   });
@@ -41,6 +45,8 @@ class ChatModel {
       'lastSeenBy': lastSeenBy.map(
         (key, value) => MapEntry(key, value?.millisecondsSinceEpoch),
       ),
+      'typing': typing,
+      'pinnedBy': pinnedBy,
 
       'createdAt': createdAt.millisecondsSinceEpoch,
       'updatedAt': updatedAt.millisecondsSinceEpoch,
@@ -87,6 +93,8 @@ class ChatModel {
       deletedBy: Map<String, bool>.from(map['deletedBy'] ?? {}),
       deletedAt: deletedAtMap,
       lastSeenBy: lastSeenMap,
+      typing: Map<String, bool>.from(map['typing'] ?? {}),
+      pinnedBy: Map<String, bool>.from(map['pinnedBy'] ?? {}),
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
     );
@@ -102,6 +110,8 @@ class ChatModel {
     Map<String, bool>? deletedBy,
     Map<String, DateTime?>? deletedAt,
     Map<String, DateTime?>? lastSeenBy,
+    Map<String, bool>? typing,
+    Map<String, bool>? pinnedBy,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -115,6 +125,8 @@ class ChatModel {
       deletedBy: deletedBy ?? this.deletedBy,
       deletedAt: deletedAt ?? this.deletedAt,
       lastSeenBy: lastSeenBy ?? this.lastSeenBy,
+      typing: typing ?? this.typing,
+      pinnedBy: pinnedBy ?? this.pinnedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -142,6 +154,9 @@ class ChatModel {
   DateTime? getLastSeenBy(String userId) {
     return lastSeenBy[userId];
   }
+
+  bool isTyping(String userId) => typing[userId] ?? false;
+  bool isPinnedBy(String userId) => pinnedBy[userId] ?? false;
 
   bool isMessageSeen(String currentUserId, String otherUserId) {
     if (lastMessageSenderId == currentUserId) {
