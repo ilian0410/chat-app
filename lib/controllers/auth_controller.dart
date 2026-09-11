@@ -63,7 +63,6 @@ class AuthController extends GetxController {
       );
       if (userModel != null) {
         _userModel.value = userModel;
-        Get.offAllNamed(AppRoutes.main);
       }
     } catch (e) {
       _error.value = e.toString();
@@ -73,7 +72,12 @@ class AuthController extends GetxController {
       _isLoading.value = false;
     }
   }
-  Future<void> registerWithEmailAndPassword(String email, String password, String displayName) async {
+
+  Future<void> registerWithEmailAndPassword(
+    String email,
+    String password,
+    String displayName,
+  ) async {
     try {
       _isLoading.value = true;
       _error.value = '';
@@ -84,7 +88,6 @@ class AuthController extends GetxController {
       );
       if (userModel != null) {
         _userModel.value = userModel;
-        Get.offAllNamed(AppRoutes.main);
       }
     } catch (e) {
       _error.value = e.toString();
@@ -94,12 +97,12 @@ class AuthController extends GetxController {
       _isLoading.value = false;
     }
   }
-Future<void> signOut() async {
+
+  Future<void> signOut() async {
     try {
       _isLoading.value = true;
       await _authService.signOut();
       _userModel.value = null;
-      Get.offAllNamed(AppRoutes.login);
     } catch (e) {
       _error.value = e.toString();
       Get.snackbar('Error', 'Failed to sign out');
@@ -113,7 +116,6 @@ Future<void> signOut() async {
       _isLoading.value = true;
       await _authService.deleteAccount();
       _userModel.value = null;
-      Get.offAllNamed(AppRoutes.login);
     } catch (e) {
       _error.value = e.toString();
       Get.snackbar('Error', 'Failed to sign out');
@@ -126,5 +128,3 @@ Future<void> signOut() async {
     _error.value = '';
   }
 }
-
-

@@ -9,19 +9,29 @@ class MessageModel {
   final MessageType type;
   final DateTime timestamp;
   final bool isRead;
+  final bool isDelivered;
   final bool isEdited;
+  final Map<String, String> reactions;
   final DateTime? editedAt;
+  final String? replyToMessageId;
+  final String? replyToContent;
+  final String? replyToSenderId;
 
   MessageModel({
     required this.id,
     required this.senderId,
     required this.receiverId,
     required this.content,
-     this.type = MessageType.text,
+    this.type = MessageType.text,
     required this.timestamp,
-     this.isRead = false,
-     this.isEdited = false,
+    this.isRead = false,
+    this.isDelivered = false,
+    this.isEdited = false,
+    this.reactions = const {},
     this.editedAt,
+    this.replyToMessageId,
+    this.replyToContent,
+    this.replyToSenderId,
   });
 
   Map<String, dynamic> toMap() {
@@ -33,8 +43,13 @@ class MessageModel {
       'type': type.name,
       'timestamp': timestamp.millisecondsSinceEpoch,
       'isRead': isRead,
+      'isDelivered': isDelivered,
       'isEdited': isEdited,
+      'reactions': reactions,
       'editedAt': editedAt?.millisecondsSinceEpoch,
+      'replyToMessageId': replyToMessageId,
+      'replyToContent': replyToContent,
+      'replyToSenderId': replyToSenderId,
     };
   }
 
@@ -50,10 +65,15 @@ class MessageModel {
       ),
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] ?? 0),
       isRead: map['isRead'] ?? false,
+      isDelivered: map['isDelivered'] ?? true,
       isEdited: map['isEdited'] ?? false,
+      reactions: Map<String, String>.from(map['reactions'] ?? {}),
       editedAt: map['editedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['editedAt'])
           : null,
+      replyToMessageId: map['replyToMessageId'] as String?,
+      replyToContent: map['replyToContent'] as String?,
+      replyToSenderId: map['replyToSenderId'] as String?,
     );
   }
 
@@ -65,8 +85,13 @@ class MessageModel {
     MessageType? type,
     DateTime? timestamp,
     bool? isRead,
+    bool? isDelivered,
     bool? isEdited,
+    Map<String, String>? reactions,
     DateTime? editedAt,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderId,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -76,8 +101,13 @@ class MessageModel {
       type: type ?? this.type,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
+      isDelivered: isDelivered ?? this.isDelivered,
       isEdited: isEdited ?? this.isEdited,
+      reactions: reactions ?? this.reactions,
       editedAt: editedAt ?? this.editedAt,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToContent: replyToContent ?? this.replyToContent,
+      replyToSenderId: replyToSenderId ?? this.replyToSenderId,
     );
   }
 }

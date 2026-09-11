@@ -1,4 +1,5 @@
 import 'package:chat_app/controllers/friend_requests_controller.dart';
+import 'package:chat_app/models/friend_request_model.dart';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:chat_app/view/widgets/friend_request_item.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +61,7 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
                               'Received (${controller.receivedRequests.length})',
                               style: TextStyle(
                                 color: controller.selectedTabIndex == 0
-                                    ? Colors.white
+                                    ? AppTheme.primaryColor
                                     : AppTheme.textSecondaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -96,7 +97,7 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
                               'Sent (${controller.sentRequests.length})',
                               style: TextStyle(
                                 color: controller.selectedTabIndex == 1
-                                    ? Colors.white
+                                    ? AppTheme.primaryColor
                                     : AppTheme.textSecondaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -112,6 +113,9 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
           ),
           Expanded(
             child: Obx(() {
+              if (controller.error.isNotEmpty) {
+                return Center(child: Text(controller.error));
+              }
               return IndexedStack(
                 index: controller.selectedTabIndex,
                 children: [
@@ -150,6 +154,7 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
             isReceived: true,
             onAccept: () => controller.acceptRequest(request),
             onDecline: () => controller.declineFriendRequest(request),
+            onRemove: () => _confirmRemove(request),
           );
         },
         separatorBuilder: ((context, index) => SizedBox(height: 8)),
@@ -160,7 +165,7 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
 
   Widget _buildSendRequestsTab() {
     return Obx(() {
-      if (controller.receivedRequests.isEmpty) {
+      if (controller.sentRequests.isEmpty) {
         return _buildEmptyState(
           icon: Icons.inbox,
           title: 'No Sent requests',
@@ -171,7 +176,7 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
       return ListView.separated(
         itemBuilder: (context, index) {
           final request = controller.sentRequests[index];
-          final receiver = controller.getUser(request.senderId);
+          final receiver = controller.getUser(request.receiverId);
           if (receiver == null) {
             return SizedBox.shrink();
           }
@@ -182,6 +187,10 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
             isReceived: false,
             statusText: controller.getStatusText(request.status),
             statusColor: controller.getStatusColor(request.status),
+            onCancel: request.status == FriendRequestStatus.pending
+                ? () => controller.cancelFriendRequest(request)
+                : null,
+            onRemove: () => _confirmRemove(request),
           );
         },
         separatorBuilder: ((context, index) => SizedBox(height: 8)),
@@ -229,5 +238,29 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmRemove(FriendRequestModel request) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Remove request?'),
+        content: const Text(
+          'This request will be removed from your request history.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Keep'),
+          ),
+          FilledButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await controller.deleteFriendRequest(request);
+    }
   }
 }

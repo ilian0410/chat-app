@@ -38,8 +38,13 @@ dependencies:
   firebase_core: ^4.14.0
   firebase_auth: ^6.6.1
   cloud_firestore: ^6.9.0
+  firebase_storage: ^13.0.4
   google_fonts: ^8.2.1
   uuid: ^4.6.0
+  image_picker: ^1.2.0
+  record: ^6.1.2
+  audioplayers: ^6.5.0
+  visibility_detector: ^0.4.0+2
   
 
 dev_dependencies:

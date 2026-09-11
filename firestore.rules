@@ -1,0 +1,177 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function userDoc(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function userExists(userId) {
+      return userDoc(userId).exists;
+    }
+
+    function blocked(userId, otherUserId) {
+      return userExists(userId)
+        && userExists(otherUserId)
+        && (
+          userDoc(userId).data.blockedUserIds.hasAny([otherUserId])
+          || userDoc(otherUserId).data.blockedUserIds.hasAny([userId])
+        );
+    }
+
+    function conversationAllowed(userId, otherUserId) {
+      return signedIn()
+        && request.auth.uid == userId
+        && userId != otherUserId
+        && userExists(userId)
+        && userExists(otherUserId)
+        && !blocked(userId, otherUserId);
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if isUser(userId)
+        && request.resource.data.id == userId;
+      allow update: if isUser(userId)
+        && request.resource.data.id == resource.data.id
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isUser(userId);
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn()
+        && resource.data.senderId == request.auth.uid
+        || signedIn() && resource.data.receiverId == request.auth.uid;
+
+      allow create: if request.resource.data.senderId == request.auth.uid
+        && conversationAllowed(
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        )
+        && request.resource.data.id == messageId
+        && request.resource.data.content is string
+        && request.resource.data.timestamp is int;
+
+      allow update: if signedIn()
+        && resource.data.senderId is string
+        && resource.data.receiverId is string
+        && conversationAllowed(resource.data.senderId, resource.data.receiverId)
+        && (
+          request.auth.uid == resource.data.senderId
+          || request.auth.uid == resource.data.receiverId
+        );
+
+      allow delete: if signedIn()
+        && (
+          request.auth.uid == resource.data.senderId
+          || request.auth.uid == resource.data.receiverId
+        );
+    }
+
+    match /chats/{chatId} {
+      allow read: if signedIn()
+        && resource.data.participants.hasAny([request.auth.uid]);
+
+      allow create: if signedIn()
+        && request.resource.data.participants.hasAny([request.auth.uid])
+        && request.resource.data.participants.size() == 2
+        && !blocked(
+          request.resource.data.participants[0],
+          request.resource.data.participants[1]
+        );
+
+      allow update: if signedIn()
+        && resource.data.participants.hasAny([request.auth.uid])
+        && request.resource.data.participants == resource.data.participants
+        && !blocked(
+          resource.data.participants[0],
+          resource.data.participants[1]
+        );
+      allow delete: if signedIn()
+        && resource.data.participants.hasAny([request.auth.uid]);
+    }
+
+    match /friend_requests/{requestId} {
+      allow read: if signedIn()
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.receiverId == request.auth.uid
+        );
+
+      allow create: if request.resource.data.senderId == request.auth.uid
+        && request.resource.data.id == requestId
+        && request.resource.data.senderId != request.resource.data.receiverId
+        && conversationAllowed(
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        );
+
+      allow update: if signedIn()
+        && resource.data.receiverId == request.auth.uid
+        && request.resource.data.senderId == resource.data.senderId
+        && request.resource.data.receiverId == resource.data.receiverId
+        && request.resource.data.id == resource.data.id
+        && !blocked(resource.data.senderId, resource.data.receiverId)
+        && request.resource.data.status in ['pending', 'accepted', 'declined'];
+
+      allow delete: if signedIn()
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.receiverId == request.auth.uid
+        );
+    }
+
+    match /friendships/{friendshipId} {
+      allow read: if signedIn()
+        && (
+          resource.data.user1Id == request.auth.uid
+          || resource.data.user2Id == request.auth.uid
+        );
+
+      allow create: if signedIn()
+        && (
+          request.resource.data.user1Id == request.auth.uid
+          || request.resource.data.user2Id == request.auth.uid
+        )
+        && request.resource.data.user1Id != request.resource.data.user2Id
+        && !blocked(
+          request.resource.data.user1Id,
+          request.resource.data.user2Id
+        );
+
+      allow update: if signedIn()
+        && (
+          resource.data.user1Id == request.auth.uid
+          || resource.data.user2Id == request.auth.uid
+        )
+        && request.resource.data.user1Id == resource.data.user1Id
+        && request.resource.data.user2Id == resource.data.user2Id
+        && !blocked(resource.data.user1Id, resource.data.user2Id);
+
+      allow delete: if signedIn()
+        && (
+          resource.data.user1Id == request.auth.uid
+          || resource.data.user2Id == request.auth.uid
+        );
+    }
+
+    match /notifications/{notificationId} {
+      allow read, delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create: if signedIn()
+        && request.resource.data.userId is string
+        && request.resource.data.type != 'newMessage';
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+  }
+}

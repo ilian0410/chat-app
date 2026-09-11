@@ -3,6 +3,7 @@ import 'package:chat_app/theme/app_theme.dart';
 import 'package:chat_app/view/Profile/find_people_view.dart';
 import 'package:chat_app/view/Profile/profile_view.dart';
 import 'package:chat_app/view/friends_view.dart';
+import 'package:chat_app/view/home_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:get/get_state_manager/src/simple/get_view.dart';
@@ -15,13 +16,9 @@ class MainView extends GetView<MainController> {
         controller: controller.pageController,
         onPageChanged: controller.onPageChanged,
         children: [
-          // HomeView(),
-          // FriendsView(),
-          // UsersListView(),
-          Container(),
+          HomeView(),
           FriendsView(),
           FindPeopleView(),
-
           ProfileView(),
         ],
       ),
@@ -66,8 +63,9 @@ class MainView extends GetView<MainController> {
       ),
     );
   }
+
   Widget _buildIconWithBadge(IconData icon, int count) {
-return Stack(
+    return Stack(
       children: [
         Icon(icon),
         if (count > 0)
@@ -80,23 +78,15 @@ return Stack(
                 color: AppTheme.errorColor,
                 borderRadius: BorderRadius.circular(6),
               ),
-              constraints: BoxConstraints(
-                minWidth: 12,
-                minHeight: 12,
-              ),
+              constraints: BoxConstraints(minWidth: 12, minHeight: 12),
               child: Text(
-                count>99 ? '99+' : '$count',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 8,
-                ),
+                count > 99 ? '99+' : '$count',
+                style: TextStyle(color: Colors.white, fontSize: 8),
                 textAlign: TextAlign.center,
               ),
             ),
           ),
       ],
     );
-
-
   }
 }

@@ -30,6 +30,7 @@ class FriendRequestsController extends GetxController {
   String get error => _error.value;
   int get selectedTabIndex => _selectedTabIndex.value;
 
+  @override
   void onInit() {
     super.onInit();
     _loadFriendRequests();
@@ -40,10 +41,25 @@ class FriendRequestsController extends GetxController {
     final currentUserId = _authController.user?.uid;
     if (currentUserId != null) {
       _receivedRequests.bindStream(
-        _firestoreService.getFriendRequestsStream(currentUserId),
+        _firestoreService.getFriendRequestsStream(currentUserId).handleError((
+          Object error,
+          StackTrace stackTrace,
+        ) {
+          _error.value = _firestoreService.describeStreamError(
+            error,
+            'friend requests',
+          );
+        }),
       );
       _sentRequests.bindStream(
-        _firestoreService.getSentFriendRequestsStream(currentUserId),
+        _firestoreService
+            .getSentFriendRequestsStream(currentUserId)
+            .handleError((Object error, StackTrace stackTrace) {
+              _error.value = _firestoreService.describeStreamError(
+                error,
+                'sent friend requests',
+              );
+            }),
       );
     }
   }
@@ -95,6 +111,31 @@ class FriendRequestsController extends GetxController {
     } catch (e) {
       print(e.toString());
       _error.value = 'Failed to decline friend request';
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> cancelFriendRequest(FriendRequestModel request) async {
+    try {
+      _isLoading.value = true;
+      await _firestoreService.cancelFriendRequest(request.id);
+      Get.snackbar('Success', 'Friend request canceled');
+    } catch (e) {
+      print(e.toString());
+      _error.value = 'Failed to cancel friend request';
+    } finally {
+      _isLoading.value = false;
+    }
+  }
+
+  Future<void> deleteFriendRequest(FriendRequestModel request) async {
+    try {
+      _isLoading.value = true;
+      await _firestoreService.deleteFriendRequest(request.id);
+    } catch (e) {
+      print(e.toString());
+      _error.value = 'Failed to remove friend request';
     } finally {
       _isLoading.value = false;
     }

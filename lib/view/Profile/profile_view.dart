@@ -45,10 +45,8 @@ class ProfileView extends GetView<ProfileController> {
           );
         }
         return SingleChildScrollView(
-padding: const EdgeInsets.symmetric(
-  horizontal: 24,
-  vertical: 12,
-),          child: Column(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Column(
             children: [
               Column(
                 children: [
@@ -114,6 +112,14 @@ padding: const EdgeInsets.symmetric(
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (user.bio.trim().isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      user.bio,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                   SizedBox(height: 8),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 4, vertical: 12),
@@ -173,7 +179,7 @@ padding: const EdgeInsets.symmetric(
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 18,
-                                ),
+                              ),
                         ),
                         SizedBox(height: 20),
                         TextFormField(
@@ -188,7 +194,20 @@ padding: const EdgeInsets.symmetric(
                           ),
                         ),
                         SizedBox(height: 16),
-                         TextFormField(
+                        TextFormField(
+                          controller: controller.bioController,
+                          enabled: controller.isEditing,
+                          maxLength: 120,
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(Icons.short_text),
+                            labelText: 'Bio / Status',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        TextFormField(
                           controller: controller.emailController,
                           enabled: false,
                           decoration: InputDecoration(
@@ -200,26 +219,27 @@ padding: const EdgeInsets.symmetric(
                             ),
                           ),
                         ),
-                      if (controller.isEditing)...[
-                        SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed: controller.isLoading ? null : controller.updateProfile,
-                            child:controller.isLoading 
-                            ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                           : Text('Save Changes'),
+                        if (controller.isEditing) ...[
+                          SizedBox(height: 20),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: controller.isLoading
+                                  ? null
+                                  : controller.updateProfile,
+                              child: controller.isLoading
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : Text('Save Changes'),
+                            ),
                           ),
-                        ),
-                      ]
-                       
+                        ],
                       ],
                     ),
                   ),
@@ -229,15 +249,13 @@ padding: const EdgeInsets.symmetric(
               Column(
                 children: [
                   Card(
-                    child:Column(
+                    child: Column(
                       children: [
                         ListTile(
-                          leading:Icon(
+                          leading: Icon(
                             Icons.security,
-                            color: AppTheme.primaryColor
-                            ,
-                            
-                          ) ,
+                            color: AppTheme.primaryColor,
+                          ),
                           title: Text('Change Password'),
                           trailing: Icon(Icons.arrow_forward_ios_rounded),
                           onTap: () {
@@ -245,13 +263,11 @@ padding: const EdgeInsets.symmetric(
                           },
                         ),
                         Divider(height: 1, color: Colors.grey),
-                          ListTile(
-                          leading:Icon(
+                        ListTile(
+                          leading: Icon(
                             Icons.delete_forever_rounded,
-                            color: AppTheme.errorColor
-                            ,
-                            
-                          ) ,
+                            color: AppTheme.errorColor,
+                          ),
                           title: Text('Delete Account'),
                           trailing: Icon(Icons.arrow_forward_ios_rounded),
                           onTap: () {
@@ -259,13 +275,11 @@ padding: const EdgeInsets.symmetric(
                           },
                         ),
                         Divider(height: 1, color: Colors.grey),
-                          ListTile(
-                          leading:Icon(
+                        ListTile(
+                          leading: Icon(
                             Icons.logout_rounded,
-                            color: AppTheme.errorColor
-                            ,
-                            
-                          ) ,
+                            color: AppTheme.errorColor,
+                          ),
                           title: Text('Sign Out'),
                           trailing: Icon(Icons.arrow_forward_ios_rounded),
                           onTap: () {
@@ -273,14 +287,17 @@ padding: const EdgeInsets.symmetric(
                           },
                         ),
                       ],
-                    ) ,
+                    ),
                   ),
                   SizedBox(height: 12),
-                  Text("ChatApp v1.0.0", style: Theme.of(Get.context!).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textSecondaryColor,
-                  ),)
+                  Text(
+                    "ChatApp v1.0.0",
+                    style: Theme.of(Get.context!).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         );

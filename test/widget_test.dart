@@ -5,26 +5,20 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:chat_app/main.dart';
+import 'package:chat_app/models/chat_model.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  test('chat model resolves the other participant and unread count', () {
+    final chat = ChatModel(
+      id: 'chat-id',
+      participants: ['current-user', 'other-user'],
+      unreadCount: {'current-user': 2},
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(chat.getOtherParticipant('current-user'), 'other-user');
+    expect(chat.getUnreadCount('current-user'), 2);
   });
 }
