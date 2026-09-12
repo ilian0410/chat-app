@@ -17,12 +17,28 @@ class ChatView extends StatefulWidget {
 class _ChatViewState extends State<ChatView> {
   late final TextEditingController _inputController;
   Timer? _typingTimer;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasInitiallyScrolled = false;
   final Map<String, double> _messageSwipeOffsets = {};
 
   static const double _replySwipeThreshold = 44;
   static const double _maxReplySwipeOffset = 56;
 
   ChatController get controller => Get.find<ChatController>();
+  void _scrollToInitialPosition() {
+  if (_hasInitiallyScrolled) return;
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    final position = _scrollController.position;
+
+    if (position.maxScrollExtent > 0) {
+      _scrollController.jumpTo(position.maxScrollExtent);
+      _hasInitiallyScrolled = true;
+    }
+  });
+}
 
   @override
   void initState() {
@@ -33,9 +49,10 @@ class _ChatViewState extends State<ChatView> {
   @override
   void dispose() {
     _inputController.dispose();
-    _typingTimer?.cancel();
-    controller.setTyping(false);
-    super.dispose();
+_typingTimer?.cancel();
+_scrollController.dispose();
+controller.setTyping(false);
+super.dispose();
   }
 
   @override
@@ -123,6 +140,7 @@ class _ChatViewState extends State<ChatView> {
                   controller.messages.isEmpty) {
                 return Center(child: Text(controller.error.value));
               }
+              _scrollToInitialPosition();
               if (controller.messages.isEmpty) {
                 return Center(
                   child: Padding(
@@ -152,6 +170,7 @@ class _ChatViewState extends State<ChatView> {
                 );
               }
               return ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                 itemCount: controller.messages.length,
                 itemBuilder: (_, index) {

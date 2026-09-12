@@ -45,9 +45,30 @@ class ChatController extends GetxController {
       error.value = 'This conversation is unavailable.';
       isLoading.value = false;
     } else {
-      _loadMessages();
-      _loadPresence();
+      _initChat();
     }
+  }
+
+  Future<void> _initChat() async {
+    final user = otherUser;
+    if (currentUserId.isEmpty || user == null) {
+      error.value = 'You must be signed in to view this chat.';
+      isLoading.value = false;
+      return;
+    }
+
+    try {
+      if (chatId == null) {
+        chatId = await _firestoreService.createOrGetChat(
+          currentUserId,
+          user.id,
+        );
+      }
+    } catch (_) {}
+
+   _loadMessages();
+_loadPresence();
+await _markConversationAsRead();
   }
 
   void _loadPresence() {
@@ -73,8 +94,6 @@ class ChatController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    _markConversationAsRead();
-    markMessagesAsRead();
   }
 
   Future<void> _markConversationAsRead() async {
@@ -107,7 +126,6 @@ class ChatController extends GetxController {
             isLoading.value = false;
             error.value = '';
             messages.assignAll(value);
-            markMessagesAsRead();
           },
           onError: (Object streamError, StackTrace stackTrace) {
             isLoading.value = false;
