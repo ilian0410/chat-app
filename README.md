@@ -447,8 +447,9 @@ This prevents the application from depending only on manually created indexes in
 
 A short demonstration of ChatApp showcasing real-time messaging, friend management, notifications, read receipts, reactions, replies, and profile features.
 
-[![Watch the ChatApp demo](docs/screenshots/demo-cover.png)](https://youtu.be/ep2rBtzehQQ)
-
+<a href="https://youtu.be/ep2rBtzehQQ">
+  <img src="docs/screenshots/demo-cover.png" width="450">
+</a>
 ---
 
 ## 📱 Screenshots
