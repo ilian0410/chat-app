@@ -6,7 +6,7 @@ ChatApp is a portfolio project focused on building a complete social messaging f
 
 ---
 
-## ✨ Features
+##  Features
 
 ### 🔐 Authentication & Account
 
@@ -446,6 +446,8 @@ This prevents the application from depending only on manually created indexes in
 ## 🎬 Demo
 
 A short demonstration of ChatApp showcasing real-time messaging, friend management, notifications, read receipts, reactions, replies, and profile features.
+
+CLICK AT THE PHOTO BELOW👇
 
 <a href="https://youtu.be/ep2rBtzehQQ">
   <img src="docs/screenshots/demo-cover.png" width="450">
