@@ -452,8 +452,8 @@ CLICK AT THE PHOTO BELOW👇
 <a href="https://youtu.be/ep2rBtzehQQ">
   <img src="docs/screenshots/demo-cover.png" width="450">
 </a>
----
 
+---
 ## 📱 Screenshots
 
 | Login | Chats |
