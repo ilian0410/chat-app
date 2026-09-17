@@ -453,6 +453,9 @@ CLICK AT THE PHOTO BELOW👇
   <img src="docs/screenshots/demo-cover.png" width="450">
 </a>
 
+
+
+[Download APK](https://github.com/ilian0410/chat-app/releases/tag/v1.0.0)
 ---
 ## 📱 Screenshots
 
