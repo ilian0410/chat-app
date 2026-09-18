@@ -58,8 +58,10 @@ function userExists(userId) {
 
     match /messages/{messageId} {
       allow read: if signedIn()
-        && resource.data.senderId == request.auth.uid
-        || signedIn() && resource.data.receiverId == request.auth.uid;
+        && (
+          resource.data.senderId == request.auth.uid
+          || resource.data.receiverId == request.auth.uid
+        );
 
       allow create: if request.resource.data.senderId == request.auth.uid
         && conversationAllowed(
@@ -175,8 +177,7 @@ function userExists(userId) {
           || resource.data.user2Id == request.auth.uid
         )
         && request.resource.data.user1Id == resource.data.user1Id
-        && request.resource.data.user2Id == resource.data.user2Id
-        && !blocked(resource.data.user1Id, resource.data.user2Id);
+        && request.resource.data.user2Id == resource.data.user2Id;
 
       allow delete: if signedIn()
         && (

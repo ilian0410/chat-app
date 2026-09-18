@@ -76,11 +76,13 @@ class ProfileController extends GetxController {
       _error.value = '';
       final user = _currentUser.value;
       if (user == null) return;
+      final newDisplayName = displayNameController.text.trim();
       final updatedUser = user.copyWith(
-        displayName: displayNameController.text,
+        displayName: newDisplayName,
         bio: bioController.text.trim(),
       );
       await _firestoreService.updateUser(updatedUser);
+      await FirebaseAuth.instance.currentUser?.updateDisplayName(newDisplayName);
       _isEditing.value = false;
       Get.snackbar(
         'Success',
@@ -89,7 +91,17 @@ class ProfileController extends GetxController {
         colorText: Colors.green,
         duration: const Duration(seconds: 4),
       );
+    } catch (e) {
+      _error.value = e.toString();
+      Get.snackbar(
+        'Error',
+        'Failed to update profile: ${e.toString()}',
+        backgroundColor: Colors.redAccent.withOpacity(0.1),
+        colorText: Colors.redAccent,
+        duration: const Duration(seconds: 4),
+      );
     } finally {
+      _isLoading.value = false;
       _isEditing.value = false;
     }
   }
@@ -145,6 +157,8 @@ class ProfileController extends GetxController {
         colorText: Colors.redAccent,
         duration: const Duration(seconds: 4),
       );
+    } finally {
+      _isLoading.value = false;
     }
   }
 
@@ -173,7 +187,7 @@ class ProfileController extends GetxController {
     return 'Joined ${months[date.month - 1]} ${date.year}';
   }
 
-  void _clearError() {
+  void clearError() {
     _error.value = '';
   }
 }

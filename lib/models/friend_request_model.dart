@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum FriendRequestStatus { pending, accepted, declined }
 
 class FriendRequestModel {
@@ -18,6 +20,15 @@ class FriendRequestModel {
     this.respondedAt,
     this.message,
   });
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -40,10 +51,8 @@ class FriendRequestModel {
         (e) => e.name == map['status'],
         orElse: () => FriendRequestStatus.pending,
       ),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      respondedAt: map['respondedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['respondedAt'])
-          : null,
+      createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
+      respondedAt: _parseDateTime(map['respondedAt']),
       message: map['message'],
     );
   }

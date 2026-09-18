@@ -4,7 +4,6 @@ import 'package:chat_app/models/friendship_model.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/services/firestore_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -38,6 +37,7 @@ class UsersListController extends GetxController {
   final RxList<FriendRequestModel> _receivedRequests =
       <FriendRequestModel>[].obs;
   final RxList<FriendshipModel> _friendships = <FriendshipModel>[].obs;
+  final TextEditingController searchController = TextEditingController();
   List<UserModel> get users => _users;
   List<UserModel> get filteredUsers => _filteredUsers;
   bool get isLoading => _isLoading.value;
@@ -51,27 +51,19 @@ class UsersListController extends GetxController {
     super.onInit();
     _loadUsers();
     _loadRelationships();
-    debounce(
-      _sentRequests,
-      (_) => _filterUsers(),
-      time: Duration(milliseconds: 300),
-    );
+  }
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
   }
 
   void _loadUsers() async {
     _users.bindStream(_firestoreService.getAllUsersStream());
     // filter out current user and update the filtered list
-    ever(_users, (List<UserModel> userList) {
-      final currentUserId = _authController.user?.uid;
-      final otherUsers = userList
-          .where((user) => user.id != currentUserId)
-          .toList();
-
-      if (_searchQuery.isNotEmpty) {
-        _filteredUsers.value = otherUsers;
-      } else {
-        _filterUsers();
-      }
+    ever(_users, (_) {
+      _filterUsers();
     });
   }
 
@@ -142,7 +134,7 @@ class UsersListController extends GetxController {
 
   void _filterUsers() {
     final currentUserId = _authController.user?.uid;
-    final query = _searchQuery.value.toLowerCase();
+    final query = _searchQuery.value.trim().toLowerCase();
     if (query.isEmpty) {
       _filteredUsers.value = _users
           .where((user) => user.id != currentUserId)
@@ -158,10 +150,13 @@ class UsersListController extends GetxController {
 
   void updateSearchQuery(String query) {
     _searchQuery.value = query;
+    _filterUsers();
   }
 
   void clearSearchQuery() {
+    searchController.clear();
     _searchQuery.value = '';
+    _filterUsers();
   }
 
   Future<void> SendFriendRequest(UserModel user) async {
@@ -410,7 +405,7 @@ class UsersListController extends GetxController {
     }
   }
 
-  void _clearError() {
+  void clearError() {
     _error.value = '';
   }
 }

@@ -27,12 +27,19 @@ class AuthController extends GetxController {
     ever(_user, _handleAuthStateChanged);
   }
 
-  void _handleAuthStateChanged(User? user) {
+  void _handleAuthStateChanged(User? user) async {
     if (user == null) {
+      _userModel.value = null;
       if (Get.currentRoute != AppRoutes.login) {
         Get.offAllNamed(AppRoutes.login);
       }
     } else {
+      if (_userModel.value == null || _userModel.value!.id != user.uid) {
+        final loaded = await _authService.getUser(user.uid);
+        if (loaded != null) {
+          _userModel.value = loaded;
+        }
+      }
       if (Get.currentRoute != AppRoutes.main) {
         Get.offAllNamed(AppRoutes.main);
       }
@@ -42,10 +49,14 @@ class AuthController extends GetxController {
     }
   }
 
-  void checkInitialAuthState() {
+  void checkInitialAuthState() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       _user.value = currentUser;
+      final loaded = await _authService.getUser(currentUser.uid);
+      if (loaded != null) {
+        _userModel.value = loaded;
+      }
       Get.offAllNamed(AppRoutes.main);
     } else {
       Get.offAllNamed(AppRoutes.login);
@@ -118,7 +129,7 @@ class AuthController extends GetxController {
       _userModel.value = null;
     } catch (e) {
       _error.value = e.toString();
-      Get.snackbar('Error', 'Failed to sign out');
+      Get.snackbar('Error', 'Failed to delete account');
     } finally {
       _isLoading.value = false;
     }

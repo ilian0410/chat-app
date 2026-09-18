@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum MessageType { text }
 
 class MessageModel {
@@ -34,6 +36,15 @@ class MessageModel {
     this.replyToSenderId,
   });
 
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -63,14 +74,12 @@ class MessageModel {
         (e) => e.name == map['type'],
         orElse: () => MessageType.text,
       ),
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] ?? 0),
+      timestamp: _parseDateTime(map['timestamp']) ?? DateTime.now(),
       isRead: map['isRead'] ?? false,
       isDelivered: map['isDelivered'] ?? true,
       isEdited: map['isEdited'] ?? false,
       reactions: Map<String, String>.from(map['reactions'] ?? {}),
-      editedAt: map['editedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['editedAt'])
-          : null,
+      editedAt: _parseDateTime(map['editedAt']),
       replyToMessageId: map['replyToMessageId'] as String?,
       replyToContent: map['replyToContent'] as String?,
       replyToSenderId: map['replyToSenderId'] as String?,

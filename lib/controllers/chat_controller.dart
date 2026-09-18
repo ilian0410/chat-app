@@ -126,6 +126,7 @@ await _markConversationAsRead();
             isLoading.value = false;
             error.value = '';
             messages.assignAll(value);
+            _markConversationAsRead();
           },
           onError: (Object streamError, StackTrace stackTrace) {
             isLoading.value = false;
@@ -148,10 +149,13 @@ await _markConversationAsRead();
     isSending.value = true;
     error.value = '';
     try {
-      chatId ??= await _firestoreService.createOrGetChat(
-        currentUserId,
-        user.id,
-      );
+      if (chatId == null) {
+        chatId = await _firestoreService.createOrGetChat(
+          currentUserId,
+          user.id,
+        );
+        _loadPresence();
+      }
       final message = MessageModel(
         id: _uuid.v4(),
         senderId: currentUserId,

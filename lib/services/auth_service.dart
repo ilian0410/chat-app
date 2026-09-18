@@ -10,6 +10,10 @@ class AuthService {
   String? get currentUserId => _auth.currentUser?.uid;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  Future<UserModel?> getUser(String userId) async {
+    return await _firestoreService.getUser(userId);
+  }
+
   Future<UserModel?> signInWithEmailAndPassword(
     String email,
     String password,
@@ -22,6 +26,7 @@ class AuthService {
       User? user = result.user;
       if (user != null) {
         await _firestoreService.updateUserOnlineStatus(user.uid, true);
+        return await _firestoreService.getUser(user.uid);
       }
       return null;
     } catch (e) {

@@ -206,8 +206,6 @@ class FriendRequestItem extends StatelessWidget {
         return Icons.check_circle;
       case FriendRequestStatus.declined:
         return Icons.cancel;
-      default:
-        return Icons.info;
     }
   }
 }

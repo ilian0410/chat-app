@@ -140,18 +140,27 @@ class FirestoreService {
     String otherUserId,
     bool blocked,
   ) async {
-    final batch = _firestore.batch();
     final userRef = _firestore.collection('users').doc(userId);
-    final otherRef = _firestore.collection('users').doc(otherUserId);
     final operation = blocked
         ? FieldValue.arrayUnion([otherUserId])
         : FieldValue.arrayRemove([otherUserId]);
-    final reverseOperation = blocked
-        ? FieldValue.arrayUnion([userId])
-        : FieldValue.arrayRemove([userId]);
-    batch.update(userRef, {'blockedUserIds': operation});
-    batch.update(otherRef, {'blockedUserIds': reverseOperation});
-    await batch.commit();
+    await userRef.update({'blockedUserIds': operation});
+
+    try {
+      List<String> userIds = [userId, otherUserId];
+      userIds.sort();
+      String friendshipId = '${userIds[0]}_${userIds[1]}';
+      final friendshipRef =
+          _firestore.collection('friendships').doc(friendshipId);
+      final friendshipDoc = await friendshipRef.get();
+      if (friendshipDoc.exists) {
+        await friendshipRef.update({
+          'isBlocked': blocked,
+          'blockedBy': blocked ? userId : null,
+        });
+      }
+    } catch (_) {}
+
     _userLookupCache.remove(userId);
     _userLookupCache.remove(otherUserId);
   }
@@ -172,6 +181,13 @@ class FirestoreService {
     try {
       if (await areUsersBlocked(request.senderId, request.receiverId)) {
         throw Exception('This user is blocked.');
+      }
+      final existingReq = await getFriendRequest(
+        request.senderId,
+        request.receiverId,
+      );
+      if (existingReq != null) {
+        throw Exception('A friend request is already pending.');
       }
       await _firestore
           .collection('friend_requests')
@@ -198,25 +214,30 @@ class FirestoreService {
     }
   }
 
-Future<void> cancelFriendRequest(String requestId) async {
-  try {
-    DocumentSnapshot requestDoc = await _firestore
-        .collection('friend_requests')
-        .doc(requestId)
-        .get();
-
-    if (requestDoc.exists) {
-     
-
-      await _firestore
+  Future<void> cancelFriendRequest(String requestId) async {
+    try {
+      DocumentSnapshot requestDoc = await _firestore
           .collection('friend_requests')
           .doc(requestId)
-          .delete();
+          .get();
+
+      if (requestDoc.exists) {
+        final request = FriendRequestModel.fromMap(
+          requestDoc.data() as Map<String, dynamic>,
+        );
+        await _firestore
+            .collection('friend_requests')
+            .doc(requestId)
+            .delete();
+        await _removeNotificationForCanceledRequest(
+          request.receiverId,
+          request.senderId,
+        );
+      }
+    } catch (e) {
+      throw Exception('Failed to cancel friend request: ${e.toString()}');
     }
-  } catch (e) {
-    throw Exception('Failed to cancel friend request: ${e.toString()}');
   }
-}
 
   Future<void> deleteFriendRequest(String requestId) async {
     try {
@@ -404,14 +425,7 @@ Future<void> cancelFriendRequest(String requestId) async {
 
   Future<void> blockUser(String blockerId, String blockedId) async {
     try {
-      List<String> userIds = [blockerId, blockedId];
-      userIds.sort();
-      String friendshipId = '${userIds[0]}_${userIds[1]}';
-
-      await _firestore.collection('friendships').doc(friendshipId).update({
-        'isBlocked': true,
-        'blockedBy': blockerId,
-      });
+      await setUserBlocked(blockerId, blockedId, true);
     } catch (e) {
       throw Exception('Failed to block user: ${e.toString()}');
     }
@@ -419,14 +433,7 @@ Future<void> cancelFriendRequest(String requestId) async {
 
   Future<void> unblockUser(String userId, String user2Id) async {
     try {
-      List<String> userIds = [userId, user2Id];
-      userIds.sort();
-      String friendshipId = '${userIds[0]}_${userIds[1]}';
-
-      await _firestore.collection('friendships').doc(friendshipId).update({
-        'isBlocked': false,
-        'blockedBy': null,
-      });
+      await setUserBlocked(userId, user2Id, false);
     } catch (e) {
       throw Exception('Failed to unblock user: ${e.toString()}');
     }
@@ -604,6 +611,8 @@ Future<void> cancelFriendRequest(String requestId) async {
         'lastMessageTime': message.timestamp.millisecondsSinceEpoch,
         'lastMessageSenderId': message.senderId,
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        'deletedBy.${message.senderId}': false,
+        'deletedBy.${message.receiverId}': false,
       });
     } catch (e) {
       throw Exception('Failed to update chat last message: ${e.toString()}');
@@ -891,17 +900,6 @@ Stream<List<MessageModel>> getMessagesStream(String userId1, String userId2) {
             : 0;
       }
       if (chatUpdates.isNotEmpty) await chatRef.update(chatUpdates);
-    }
-    final notificationRef = _firestore
-        .collection('notifications')
-        .doc(messageId);
-    final notificationSnapshot = await notificationRef.get();
-    if (notificationSnapshot.exists) {
-      await notificationRef.update({
-        'body': 'Message deleted',
-        'isRead': true,
-        'data.deletedMessage': true,
-      });
     }
   }
 

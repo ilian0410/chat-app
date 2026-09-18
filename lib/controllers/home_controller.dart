@@ -4,8 +4,6 @@ import 'package:chat_app/models/notification_model.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -27,6 +25,7 @@ class HomeController extends GetxController {
   final RxString _searchQuery = ''.obs;
   final RxBool _isSearching = false.obs;
   final RxString _activeFilter = 'All'.obs;
+  final TextEditingController searchController = TextEditingController();
 
   List<ChatModel> get chats => _getFilteredChats();
   List<ChatModel> get allChats => _allChats;
@@ -249,6 +248,7 @@ class HomeController extends GetxController {
   }
 
   void clearSearch() {
+    searchController.clear();
     _searchQuery.value = '';
     _clearSearch();
   }
@@ -411,6 +411,7 @@ class HomeController extends GetxController {
 
   @override
   void onClose() {
+    searchController.dispose();
     super.onClose();
   }
 }

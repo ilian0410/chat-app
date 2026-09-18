@@ -308,7 +308,7 @@ super.dispose();
                                           if (isMine) ...[
                                             const SizedBox(width: 6),
                                             Icon(
-                                              message.isRead
+                                              message.isRead || message.isDelivered
                                                   ? Icons.done_all
                                                   : Icons.done,
                                               size: 14,

@@ -1,14 +1,11 @@
-import 'package:chat_app/controllers/auth_controller.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
 class ChangePasswordController extends GetxController {
-  final AuthController _authController = Get.find<AuthController>();
   final TextEditingController currentPasswordController =
       TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
@@ -143,7 +140,7 @@ class ChangePasswordController extends GetxController {
     }
     return null;
   }
-  void _clearError() {
+  void clearError() {
     _error.value = '';
   }
 }

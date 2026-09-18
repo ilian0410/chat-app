@@ -36,6 +36,7 @@ class FriendsView extends GetView<FriendsController> {
               ),
             ),
             child: TextField(
+              controller: controller.searchController,
               onChanged: controller.updateSearchQuery,
               decoration: InputDecoration(
                 hintText: 'Search friends...',

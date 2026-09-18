@@ -57,6 +57,7 @@ class FindPeopleView extends GetView<UsersListController> {
       ),
 
       child: TextField(
+        controller: controller.searchController,
         onChanged: controller.updateSearchQuery,
         decoration: InputDecoration(
           hintText: 'Search people',

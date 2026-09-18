@@ -31,6 +31,7 @@ class HomeView extends GetView<HomeController> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: TextField(
+              controller: controller.searchController,
               onChanged: controller.onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Search conversations',

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ChatModel {
   final String id;
   final List<String> participants;
@@ -29,6 +31,15 @@ class ChatModel {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -63,7 +74,7 @@ class ChatModel {
       lastSeenMap = rawLastSeen.map(
         (key, value) => MapEntry(
           key,
-          value != null ? DateTime.fromMillisecondsSinceEpoch(value) : null,
+          _parseDateTime(value),
         ),
       );
     }
@@ -77,26 +88,24 @@ class ChatModel {
       deletedAtMap = rawDeletedAt.map(
         (key, value) => MapEntry(
           key,
-          value != null ? DateTime.fromMillisecondsSinceEpoch(value) : null,
+          _parseDateTime(value),
         ),
       );
     }
     return ChatModel(
       id: map['id'] ?? '',
       participants: List<String>.from(map['participants'] ?? []),
-      lastMessage: map['lastMessage'] ?? '',
-      lastMessageTime: DateTime.fromMillisecondsSinceEpoch(
-        map['lastMessageTime'] ?? 0,
-      ),
-      lastMessageSenderId: map['lastMessageSenderId'],
+      lastMessage: map['lastMessage'] as String?,
+      lastMessageTime: _parseDateTime(map['lastMessageTime']),
+      lastMessageSenderId: map['lastMessageSenderId'] as String?,
       unreadCount: Map<String, int>.from(map['unreadCount'] ?? {}),
       deletedBy: Map<String, bool>.from(map['deletedBy'] ?? {}),
       deletedAt: deletedAtMap,
       lastSeenBy: lastSeenMap,
       typing: Map<String, bool>.from(map['typing'] ?? {}),
       pinnedBy: Map<String, bool>.from(map['pinnedBy'] ?? {}),
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
+      createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: _parseDateTime(map['updatedAt']) ?? DateTime.now(),
     );
   }
 
@@ -159,7 +168,7 @@ class ChatModel {
   bool isPinnedBy(String userId) => pinnedBy[userId] ?? false;
 
   bool isMessageSeen(String currentUserId, String otherUserId) {
-    if (lastMessageSenderId == currentUserId) {
+    if (lastMessageSenderId == currentUserId && lastMessageTime != null) {
       final otherUserLastSeen = getLastSeenBy(otherUserId);
       if (otherUserLastSeen != null) {
         return otherUserLastSeen.isAfter(lastMessageTime!) ||

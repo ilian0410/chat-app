@@ -5,13 +5,11 @@ import 'package:chat_app/models/friendship_model.dart';
 import 'package:chat_app/models/user_model.dart';
 import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/services/firestore_service.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_rx/src/rx_workers/rx_workers.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 
 class FriendsController extends GetxController {
@@ -23,6 +21,7 @@ class FriendsController extends GetxController {
   final RxString _searchQuery = ''.obs;
   final RxList<UserModel> _filteredFriends = <UserModel>[].obs;
   final RxList<FriendshipModel> _friendships = <FriendshipModel>[].obs;
+  final TextEditingController searchController = TextEditingController();
   StreamSubscription? _friendshipsSubscriptions;
 
   List<FriendshipModel> get friendships => _friendships.toList();
@@ -36,17 +35,12 @@ class FriendsController extends GetxController {
   void onInit() {
     super.onInit();
     _loadFriends();
-
-    debounce(
-      _searchQuery,
-      (_) => _filterFriends(),
-      time: Duration(milliseconds: 300),
-    );
   }
 
   @override
   void onClose() {
     _friendshipsSubscriptions?.cancel();
+    searchController.dispose();
     super.onClose();
   }
 
@@ -92,9 +86,9 @@ class FriendsController extends GetxController {
   }
 
   void _filterFriends() {
-    final query = _searchQuery.value.toLowerCase();
+    final query = _searchQuery.value.trim().toLowerCase();
     if (query.isEmpty) {
-      _filteredFriends.value = _friends;
+      _filteredFriends.value = _friends.toList();
     } else {
       _filteredFriends.value = _friends.where((friend) {
         return friend.displayName.toLowerCase().contains(query) ||
@@ -105,10 +99,13 @@ class FriendsController extends GetxController {
 
   void updateSearchQuery(String query) {
     _searchQuery.value = query;
+    _filterFriends();
   }
 
   void clearSearch() {
+    searchController.clear();
     _searchQuery.value = '';
+    _filterFriends();
   }
 
   Future<void> refreshFriends() async {

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FriendshipModel {
   final String id;
   final String user1Id;
@@ -15,6 +17,15 @@ class FriendshipModel {
      this.blockedBy,
   });
 
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -31,7 +42,7 @@ class FriendshipModel {
       id: map['id'] ?? '',
       user1Id: map['user1Id'] ?? '',
       user2Id: map['user2Id'] ?? '',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
+      createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
       isBlocked: map['isBlocked'] ?? false,
       blockedBy: map['blockedBy'],
     );

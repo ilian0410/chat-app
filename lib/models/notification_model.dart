@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 enum NotificationType {
   friendRequest,
   friendRequestAccepted,
@@ -25,8 +27,17 @@ class NotificationModel {
     required this.type,
      this.data = const{},
      this.isRead = false, 
-     required this.createdAt,
+    required this.createdAt,
   });
+
+  static DateTime? _parseDateTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -49,11 +60,11 @@ class NotificationModel {
       body: map['body'] ?? '',
       type: NotificationType.values.firstWhere(
         (e) => e.name == map['type'],
-        orElse: () => NotificationType.newMessage,
+        orElse: () => NotificationType.friendRequest,
       ),
       data: Map<String, dynamic>.from(map['data'] ?? {}),
       isRead: map['isRead'] ?? false,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
+      createdAt: _parseDateTime(map['createdAt']) ?? DateTime.now(),
     );
   }
 
