@@ -1,7 +1,9 @@
 import 'package:chat_app/models/friend_request_model.dart';
 import 'package:chat_app/models/user_model.dart';
+import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class FriendRequestItem extends StatelessWidget {
   final FriendRequestModel request;
@@ -31,51 +33,31 @@ class FriendRequestItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppTheme.primaryColor,
-                  child: user.photoURL.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Image.network(
-                            user.photoURL,
-                            width: 48,
-                            height: 48,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Text(
-                                user.displayName.isNotEmpty
-                                    ? user.displayName[0].toUpperCase()
-                                    : '?',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                      : Text(
-                          user.displayName.isNotEmpty
-                              ? user.displayName[0].toUpperCase()
-                              : '?',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header: Avatar + User info + Timestamp/Remove ──────────────
+          Row(
+            children: [
+              // Avatar
+              GestureDetector(
+                onTap: () => Get.toNamed(
+                  AppRoutes.userProfile,
+                  arguments: {'user': user},
                 ),
-                SizedBox(width: 12),
-                Expanded(
+                child: _buildAvatar(),
+              ),
+              const SizedBox(width: 12),
+
+              // Name & Email
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => Get.toNamed(
+                    AppRoutes.userProfile,
+                    arguments: {'user': user},
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -84,128 +66,246 @@ class FriendRequestItem extends StatelessWidget {
                           Expanded(
                             child: Text(
                               user.displayName,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimaryColor,
+                                letterSpacing: -0.2,
+                              ),
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             timeText,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(color: AppTheme.textSecondaryColor),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF8E8E93),
+                            ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
                         user.email,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondaryColor,
-                          fontStyle: FontStyle.italic,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF8E8E93),
                         ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-
-                        maxLines: 2,
                       ),
                     ],
                   ),
                 ),
-                if (onRemove != null)
-                  IconButton(
-                    tooltip: 'Remove request',
-                    onPressed: onRemove,
-                    icon: const Icon(Icons.delete_outline),
-                    color: AppTheme.textSecondaryColor,
+              ),
+
+              // Remove icon for completed / resolved requests
+              if (onRemove != null &&
+                  (!isReceived || request.status != FriendRequestStatus.pending))
+                IconButton(
+                  tooltip: 'Remove',
+                  onPressed: onRemove,
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: Color(0xFFAEAEB2),
                   ),
-              ],
-            ),
-            if (isReceived &&
-                request.status == FriendRequestStatus.pending) ...[
-              SizedBox(height: 16),
-              Row(
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+
+          // ── Action Buttons (Received) ─────────────────────────────────
+          if (isReceived &&
+              request.status == FriendRequestStatus.pending) ...[
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.only(left: 56),
+              child: Row(
                 children: [
+                  // Confirm button
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onDecline,
-                      icon: Icon(Icons.close),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.errorColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: 34,
+                      child: FilledButton(
+                        onPressed: onAccept,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Confirm',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                      label: Text('Decline'),
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
+
+                  // Decline button
                   Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: onAccept,
-                      icon: Icon(Icons.check),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.successColor,
-                        foregroundColor: Colors.white,
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: 34,
+                      child: FilledButton.tonal(
+                        onPressed: onDecline,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFFF2F2F7),
+                          foregroundColor: const Color(0xFF3C3C43),
+                          padding: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Delete',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                      label: Text('Accept'),
                     ),
                   ),
                 ],
               ),
-            ] else if (!isReceived && statusText != null) ...[
-              SizedBox(height: 12),
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-                decoration: BoxDecoration(
-                  color:
-                      statusColor?.withOpacity(0.1) ??
-                      Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: statusColor ?? Colors.grey),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(_getStatusIcon(), color: statusColor, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      statusText!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: statusColor ?? AppTheme.textSecondaryColor,
-                        fontWeight: FontWeight.w600,
+            ),
+          ]
+
+          // ── Sent Request Status Badge ─────────────────────────────────
+          else if (!isReceived && statusText != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(left: 56),
+              child: Row(
+                children: [
+                  _buildStatusPill(),
+                  const Spacer(),
+                  if (request.status == FriendRequestStatus.pending &&
+                      onCancel != null)
+                    TextButton(
+                      onPressed: onCancel,
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        minimumSize: const Size(0, 30),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text(
+                        'Cancel request',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF8E8E93),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-              if (!isReceived &&
-                  request.status == FriendRequestStatus.pending &&
-                  onCancel != null)
-                TextButton.icon(
-                  onPressed: onCancel,
-                  icon: const Icon(Icons.close),
-                  label: const Text('Cancel request'),
-                ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
 
-  IconData _getStatusIcon() {
+  Widget _buildAvatar() {
+    final initials = user.displayName.isNotEmpty
+        ? user.displayName[0].toUpperCase()
+        : '?';
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppTheme.primaryColor.withValues(alpha: 0.12),
+      ),
+      child: user.photoURL.isNotEmpty
+          ? ClipOval(
+              child: Image.network(
+                user.photoURL,
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : Center(
+              child: Text(
+                initials,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildStatusPill() {
+    Color bg;
+    Color fg;
+    IconData icon;
+
     switch (request.status) {
       case FriendRequestStatus.pending:
-        return Icons.hourglass_top;
+        bg = const Color(0xFFFF9500).withValues(alpha: 0.12);
+        fg = const Color(0xFFFF9500);
+        icon = Icons.schedule_rounded;
+        break;
       case FriendRequestStatus.accepted:
-        return Icons.check_circle;
+        bg = const Color(0xFF34C759).withValues(alpha: 0.12);
+        fg = const Color(0xFF34C759);
+        icon = Icons.check_circle_outline_rounded;
+        break;
       case FriendRequestStatus.declined:
-        return Icons.cancel;
+        bg = const Color(0xFFFF3B30).withValues(alpha: 0.12);
+        fg = const Color(0xFFFF3B30);
+        icon = Icons.highlight_off_rounded;
+        break;
     }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            statusText!,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -25,6 +25,9 @@ class ProfileView extends GetView<ProfileController> {
           );
         }
 
+        final isEditing = controller.isEditing;
+        final isLoading = controller.isLoading;
+
         return CustomScrollView(
           slivers: [
             // ── App Bar ──────────────────────────────────────────────────────
@@ -34,31 +37,26 @@ class ProfileView extends GetView<ProfileController> {
               surfaceTintColor: Colors.transparent,
               shadowColor: Colors.transparent,
               elevation: 0,
-              title: Obx(
-                () => Text(
-                  controller.isEditing ? 'Edit Profile' : 'Profile',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimaryColor,
-                    fontSize: 17,
-                  ),
+              title: Text(
+                isEditing ? 'Edit Profile' : 'Profile',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimaryColor,
+                  fontSize: 17,
                 ),
               ),
               centerTitle: true,
               actions: [
-                Obx(
-                  () => TextButton(
-                    onPressed:
-                        controller.isLoading ? null : controller.toggleEditing,
-                    child: Text(
-                      controller.isEditing ? 'Cancel' : 'Edit',
-                      style: TextStyle(
-                        color: controller.isEditing
-                            ? AppTheme.errorColor
-                            : AppTheme.primaryColor,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                      ),
+                TextButton(
+                  onPressed: isLoading ? null : controller.toggleEditing,
+                  child: Text(
+                    isEditing ? 'Cancel' : 'Edit',
+                    style: TextStyle(
+                      color: isEditing
+                          ? AppTheme.errorColor
+                          : AppTheme.primaryColor,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 16,
                     ),
                   ),
                 ),
@@ -78,38 +76,35 @@ class ProfileView extends GetView<ProfileController> {
                           clipBehavior: Clip.none,
                           children: [
                             _Avatar(user: user),
-                            Obx(
-                              () => controller.isEditing
-                                  ? Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: GestureDetector(
-                                        onTap: () => Get.snackbar(
-                                          'Coming soon',
-                                          'Photo upload will be available soon.',
-                                          snackPosition: SnackPosition.BOTTOM,
-                                        ),
-                                        child: Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            color: AppTheme.primaryColor,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: const Color(0xFFF2F2F7),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          child: const Icon(
-                                            Icons.camera_alt,
-                                            color: Colors.white,
-                                            size: 14,
-                                          ),
-                                        ),
+                            if (isEditing)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () => Get.snackbar(
+                                    'Coming soon',
+                                    'Photo upload will be available soon.',
+                                    snackPosition: SnackPosition.BOTTOM,
+                                  ),
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFFF2F2F7),
+                                        width: 2,
                                       ),
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
 
@@ -137,24 +132,19 @@ class ProfileView extends GetView<ProfileController> {
                         ),
 
                         // Bio (if present and not editing)
-                        Obx(() {
-                          if (user.bio.trim().isNotEmpty &&
-                              !controller.isEditing) {
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
-                              child: Text(
-                                user.bio,
-                                textAlign: TextAlign.center,
-                                style: textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.textSecondaryColor,
-                                  fontSize: 14,
-                                  height: 1.4,
-                                ),
+                        if (user.bio.trim().isNotEmpty && !isEditing)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(32, 10, 32, 0),
+                            child: Text(
+                              user.bio,
+                              textAlign: TextAlign.center,
+                              style: textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.textSecondaryColor,
+                                fontSize: 14,
+                                height: 1.4,
                               ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        }),
+                            ),
+                          ),
 
                         const SizedBox(height: 10),
 
@@ -184,10 +174,10 @@ class ProfileView extends GetView<ProfileController> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            Text(
+                            const Text(
                               '·',
                               style: TextStyle(
-                                color: const Color(0xFFAEAEB2),
+                                color: Color(0xFFAEAEB2),
                                 fontSize: 14,
                               ),
                             ),
@@ -206,9 +196,8 @@ class ProfileView extends GetView<ProfileController> {
                   ),
 
                   // ── Edit Form (shown only in edit mode) ───────────────────
-                  Obx(() {
-                    if (!controller.isEditing) return const SizedBox.shrink();
-                    return _Section(
+                  if (isEditing)
+                    _Section(
                       children: [
                         _FormField(
                           label: 'Display Name',
@@ -226,34 +215,29 @@ class ProfileView extends GetView<ProfileController> {
                           hint: 'Add a short bio…',
                         ),
                       ],
-                    );
-                  }),
+                    ),
 
-                  // Read-only email shown always
-                  Obx(() {
-                    if (controller.isEditing) return const SizedBox.shrink();
-                    return _Section(
+                  // Read-only email shown always when not editing
+                  if (!isEditing)
+                    _Section(
                       children: [
                         _InfoRow(
                           label: 'Email',
                           value: user.email,
                         ),
                       ],
-                    );
-                  }),
+                    ),
 
                   // ── Save button ───────────────────────────────────────────
-                  Obx(() {
-                    if (!controller.isEditing) return const SizedBox.shrink();
-                    return Padding(
+                  if (isEditing)
+                    Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                       child: SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: controller.isLoading
-                              ? null
-                              : controller.updateProfile,
+                          onPressed:
+                              isLoading ? null : controller.updateProfile,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppTheme.primaryColor,
                             foregroundColor: Colors.white,
@@ -262,7 +246,7 @@ class ProfileView extends GetView<ProfileController> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: controller.isLoading
+                          child: isLoading
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
@@ -280,13 +264,11 @@ class ProfileView extends GetView<ProfileController> {
                                 ),
                         ),
                       ),
-                    );
-                  }),
+                    ),
 
                   // ── Account Section ───────────────────────────────────────
-                  Obx(() {
-                    if (controller.isEditing) return const SizedBox.shrink();
-                    return _Section(
+                  if (!isEditing)
+                    _Section(
                       header: 'ACCOUNT',
                       children: [
                         _ActionRow(
@@ -295,13 +277,11 @@ class ProfileView extends GetView<ProfileController> {
                           onTap: () => Get.toNamed(AppRoutes.changePassword),
                         ),
                       ],
-                    );
-                  }),
+                    ),
 
                   // ── Danger Zone ───────────────────────────────────────────
-                  Obx(() {
-                    if (controller.isEditing) return const SizedBox.shrink();
-                    return _Section(
+                  if (!isEditing)
+                    _Section(
                       children: [
                         _ActionRow(
                           icon: Icons.logout_rounded,
@@ -316,13 +296,11 @@ class ProfileView extends GetView<ProfileController> {
                           onTap: () => controller.deleteAccount(),
                         ),
                       ],
-                    );
-                  }),
+                    ),
 
                   // ── Version footer ────────────────────────────────────────
-                  Obx(() {
-                    if (controller.isEditing) return const SizedBox.shrink();
-                    return Padding(
+                  if (!isEditing)
+                    Padding(
                       padding: const EdgeInsets.fromLTRB(0, 12, 0, 40),
                       child: Text(
                         'ChatApp v1.0.0',
@@ -331,8 +309,7 @@ class ProfileView extends GetView<ProfileController> {
                           fontSize: 12,
                         ),
                       ),
-                    );
-                  }),
+                    ),
                 ],
               ),
             ),

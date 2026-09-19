@@ -1,31 +1,18 @@
 import 'package:chat_app/controllers/users_list_controller.dart';
-
 import 'package:chat_app/models/user_model.dart';
-
 import 'package:chat_app/theme/app_theme.dart';
-
 import 'package:flutter/material.dart';
-
-import 'package:get/get_core/src/get_main.dart';
-
-import 'package:get/get_navigation/src/extension_navigation.dart';
-
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
 
 class UserListItem extends StatelessWidget {
   final UserModel user;
-
   final VoidCallback onTap;
-
   final UsersListController controller;
 
   const UserListItem({
     super.key,
-
     required this.user,
-
     required this.onTap,
-
     required this.controller,
   });
 
@@ -35,99 +22,47 @@ class UserListItem extends StatelessWidget {
       final relationshipStatus = controller.getUserRelationshipStatus(user.id);
 
       if (relationshipStatus == UserRelationShipStatus.blocked) {
-        return SizedBox.shrink(); 
+        return const SizedBox.shrink();
       }
 
-      return Card(
+      return InkWell(
+        onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.all(16),
-
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 20,
+              // Avatar with online dot indicator
+              _buildAvatar(),
 
-                backgroundColor: AppTheme.primaryColor,
+              const SizedBox(width: 14),
 
-                child: Text(
-                  user.displayName.isNotEmpty
-                      ? user.displayName[0].toUpperCase()
-                      : '?',
-
-                  style: TextStyle(
-                    color: Colors.white,
-
-                    fontSize: 24,
-
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-
-              SizedBox(width: 16),
-
+              // User Name and secondary details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       user.displayName,
-
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimaryColor,
+                        letterSpacing: -0.2,
                       ),
-
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
-                    SizedBox(height: 4),
-
-                    Text(
-                      user.email,
-
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.textSecondaryColor,
-                      ),
-
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    const SizedBox(height: 3),
+                    _buildSecondaryText(),
                   ],
                 ),
               ),
 
-              Column(
-                children: [
-                  _buildActionButtons(relationshipStatus),
+              const SizedBox(width: 12),
 
-                  if (relationshipStatus ==
-                      UserRelationShipStatus.friendRequestReceived) ...[
-                    SizedBox(height: 8),
-
-                    OutlinedButton.icon(
-                      onPressed: () => controller.declineFriendRequest(user),
-
-                      label: Text('Decline', style: TextStyle(fontSize: 10)),
-
-                      icon: Icon(Icons.close, size: 14),
-
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-
-                        side: BorderSide(color: Colors.redAccent),
-
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 4,
-
-                          vertical: 8,
-                        ),
-
-                        minimumSize: Size(0, 24),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              // Contextual relationship action button
+              _buildActionArea(context, relationshipStatus),
             ],
           ),
         ),
@@ -135,181 +70,309 @@ class UserListItem extends StatelessWidget {
     });
   }
 
-  Widget _buildActionButtons(UserRelationShipStatus relationshipStatus) {
-    switch (relationshipStatus) {
-      case UserRelationShipStatus.none:
-        return ElevatedButton.icon(
-          onPressed: () => controller.handleRelationshipAction(user),
+  Widget _buildAvatar() {
+    final initials = user.displayName.isNotEmpty
+        ? user.displayName[0].toUpperCase()
+        : '?';
 
-          icon: Icon(controller.getRelationshipButtonIcon(relationshipStatus)),
-
-          label: Text(controller.getRelationshipButtonText(relationshipStatus)),
-
-          style: ElevatedButton.styleFrom(
-            backgroundColor: controller.getRelationshipButtonColor(
-              relationshipStatus,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppTheme.primaryColor.withValues(alpha: 0.12),
+          ),
+          child: user.photoURL.isNotEmpty
+              ? ClipOval(
+                  child: Image.network(
+                    user.photoURL,
+                    width: 46,
+                    height: 46,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Center(
+                      child: Text(
+                        initials,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+        ),
+        if (user.isOnline)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: const Color(0xFF34C759), // iOS / WhatsApp green
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
             ),
+          ),
+      ],
+    );
+  }
 
-            foregroundColor: Colors.white,
+  Widget _buildSecondaryText() {
+    // Show bio if available, else email
+    if (user.bio.trim().isNotEmpty) {
+      return Text(
+        user.bio.trim(),
+        style: const TextStyle(
+          fontSize: 13,
+          color: AppTheme.textSecondaryColor,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
 
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    if (user.isOnline) {
+      return const Text(
+        'Online',
+        style: TextStyle(
+          fontSize: 13,
+          color: Color(0xFF34C759),
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    }
 
-            minimumSize: Size(0, 32),
+    return Text(
+      user.email,
+      style: const TextStyle(
+        fontSize: 13,
+        color: AppTheme.textSecondaryColor,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildActionArea(
+    BuildContext context,
+    UserRelationShipStatus status,
+  ) {
+    switch (status) {
+      case UserRelationShipStatus.none:
+        return SizedBox(
+          height: 32,
+          child: FilledButton.icon(
+            onPressed: () => controller.SendFriendRequest(user),
+            icon: const Icon(Icons.person_add_rounded, size: 15),
+            label: const Text(
+              'Add',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              minimumSize: const Size(0, 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
         );
 
       case UserRelationShipStatus.friendRequestSent:
-        return Column(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
-              decoration: BoxDecoration(
-                color: controller
-                    .getRelationshipButtonColor(relationshipStatus)
-                    .withOpacity(0.1),
-
-                borderRadius: BorderRadius.circular(8),
-
-                border: Border.all(
-                  color: controller.getRelationshipButtonColor(
-                    relationshipStatus,
-                  ),
-                ),
-              ),
-
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-
-                children: [
-                  Icon(
-                    controller.getRelationshipButtonIcon(relationshipStatus),
-
-                    color: controller.getRelationshipButtonColor(
-                      relationshipStatus,
-                    ),
-
-                    size: 16,
-                  ),
-
-                  SizedBox(width: 4),
-
-                  Text(
-                    controller.getRelationshipButtonText(relationshipStatus),
-
-                    style: TextStyle(
-                      color: controller.getRelationshipButtonColor(
-                        relationshipStatus,
-                      ),
-
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            ElevatedButton.icon(
-              onPressed: () => _showCancelRequestDialog(),
-
-              icon: Icon(Icons.cancel_outlined, size: 14),
-
-              label: Text('Cancel Request', style: TextStyle(fontSize: 10)),
-
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-
-                side: BorderSide(color: Colors.redAccent),
-
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-
-                minimumSize: Size(0, 24),
-              ),
-            ),
-          ],
-        );
-
-      case UserRelationShipStatus.friendRequestReceived:
-        return ElevatedButton.icon(
-          onPressed: () => controller.handleRelationshipAction(user),
-
-          icon: Icon(controller.getRelationshipButtonIcon(relationshipStatus)),
-
-          label: Text(controller.getRelationshipButtonText(relationshipStatus)),
-
-          style: ElevatedButton.styleFrom(
-            backgroundColor: controller.getRelationshipButtonColor(
-              relationshipStatus,
-            ),
-
-            foregroundColor: Colors.white,
-
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
-            minimumSize: Size(0, 32),
-          ),
-        );
-
-      case UserRelationShipStatus.blocked:
         return Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-
+          height: 32,
           decoration: BoxDecoration(
-            color: AppTheme.errorColor.withOpacity(0.1),
-
-            border: Border.all(color: AppTheme.errorColor),
-
+            color: const Color(0xFFF2F2F7),
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: const Color(0xFFE5E5EA),
+              width: 0.8,
+            ),
           ),
-
           child: Row(
             mainAxisSize: MainAxisSize.min,
-
             children: [
-              Icon(Icons.block, color: AppTheme.errorColor, size: 16),
-
-              SizedBox(width: 4),
-
-              Text(
-                'Blocked',
-
-                style: TextStyle(
-                  color: AppTheme.errorColor,
-
-                  fontWeight: FontWeight.w600,
+              Padding(
+                padding: const EdgeInsets.only(left: 10, right: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 14,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Requested',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              InkWell(
+                onTap: () => _showCancelRequestDialog(context),
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: AppTheme.textSecondaryColor,
+                  ),
                 ),
               ),
             ],
           ),
         );
 
+      case UserRelationShipStatus.friendRequestReceived:
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 32,
+              child: FilledButton.icon(
+                onPressed: () => controller.acceptFriendRequest(user),
+                icon: const Icon(Icons.check_rounded, size: 14),
+                label: const Text(
+                  'Accept',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF34C759),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  minimumSize: const Size(0, 32),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            SizedBox(
+              height: 32,
+              width: 32,
+              child: IconButton(
+                onPressed: () => controller.declineFriendRequest(user),
+                icon: const Icon(Icons.close_rounded, size: 16),
+                tooltip: 'Decline',
+                style: IconButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondaryColor,
+                  backgroundColor: const Color(0xFFF2F2F7),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(
+                      color: Color(0xFFE5E5EA),
+                      width: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
       case UserRelationShipStatus.friends:
-        return SizedBox.shrink();
+        return SizedBox(
+          height: 32,
+          child: OutlinedButton.icon(
+            onPressed: () => controller.startChat(user),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
+            label: const Text(
+              'Message',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.primaryColor,
+              side: BorderSide(
+                color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                width: 1,
+              ),
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              minimumSize: const Size(0, 32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        );
+
+      case UserRelationShipStatus.blocked:
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.errorColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: const Text(
+            'Blocked',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.errorColor,
+            ),
+          ),
+        );
     }
   }
 
-  void _showCancelRequestDialog() {
-    Get.dialog(
-      AlertDialog(
-        title: Text('Cancel Friend Request'),
-
-        content: Text(
-          'Are you sure you want to cancel the friend request to ${user.displayName}?',
+  void _showCancelRequestDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
         ),
-
+        title: const Text('Cancel Request'),
+        content: Text(
+          'Cancel the friend request sent to ${user.displayName}?',
+          style: const TextStyle(fontSize: 14),
+        ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('Keep Request')),
-
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Keep'),
+          ),
           TextButton(
             onPressed: () {
-              Get.back();
-
+              Navigator.of(ctx).pop();
               controller.cancelFriendRequest(user);
             },
-
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-
-            child: Text('Cancel Request'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.errorColor,
+            ),
+            child: const Text('Cancel Request'),
           ),
         ],
       ),

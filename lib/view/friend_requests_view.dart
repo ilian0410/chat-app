@@ -1,238 +1,458 @@
 import 'package:chat_app/controllers/friend_requests_controller.dart';
 import 'package:chat_app/models/friend_request_model.dart';
+import 'package:chat_app/routes/app_routes.dart';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:chat_app/view/widgets/friend_request_item.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
-import 'package:get/get_state_manager/src/simple/get_view.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 
 class FriendRequestsView extends GetView<FriendRequestsController> {
+  const FriendRequestsView({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Friend Requests'),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Get.back();
-          },
-        ),
-      ),
-      body: Column(
-        //Tab selector
-        children: [
-          Container(
-            margin: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.cardColor,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.borderColor.withOpacity(0.5)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF2F2F7),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+              ),
             ),
-            child: Obx(
-              () => Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => controller.changeTab(0),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: controller.selectedTabIndex == 0
-                              ? AppTheme.primaryColor.withOpacity(0.1)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.inbox,
-                              color: controller.selectedTabIndex == 0
-                                  ? AppTheme.primaryColor
-                                  : AppTheme.textSecondaryColor,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Received (${controller.receivedRequests.length})',
-                              style: TextStyle(
-                                color: controller.selectedTabIndex == 0
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.textSecondaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+            child: SafeArea(
+              bottom: false,
+              child: AppBar(
+                automaticallyImplyLeading: false,
+                backgroundColor: Colors.transparent,
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: AppTheme.textPrimaryColor,
                   ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => controller.changeTab(1),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: controller.selectedTabIndex == 1
-                              ? AppTheme.primaryColor.withOpacity(0.1)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        alignment: Alignment.center,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.send,
-                              color: controller.selectedTabIndex == 1
-                                  ? AppTheme.primaryColor
-                                  : AppTheme.textSecondaryColor,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Sent (${controller.sentRequests.length})',
-                              style: TextStyle(
-                                color: controller.selectedTabIndex == 1
-                                    ? AppTheme.primaryColor
-                                    : AppTheme.textSecondaryColor,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  onPressed: () => Get.back(),
+                ),
+                title: const Text(
+                  'Friend Requests',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimaryColor,
+                    letterSpacing: -0.3,
                   ),
-                ],
+                ),
+                centerTitle: true,
               ),
             ),
           ),
-          Expanded(
-            child: Obx(() {
-              if (controller.error.isNotEmpty) {
-                return Center(child: Text(controller.error));
-              }
-              return IndexedStack(
-                index: controller.selectedTabIndex,
-                children: [
-                  _buildReceivedRequestsList(),
-                  _buildSendRequestsTab(),
-                ],
-              );
-            }),
-          ),
-        ],
+        ),
+        body: Column(
+          children: [
+            // ── Segmented Control Bar ────────────────────────────────────
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: _buildSegmentedControl(),
+            ),
+            Container(height: 0.5, color: const Color(0xFFE5E5EA)),
+
+            // ── Content Area ─────────────────────────────────────────────
+            Expanded(
+              child: Obx(() {
+                if (controller.error.isNotEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            size: 44,
+                            color: Color(0xFF8E8E93),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            controller.error,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF8E8E93),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton(
+                            onPressed: controller.clearError,
+                            child: const Text('Dismiss'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                return IndexedStack(
+                  index: controller.selectedTabIndex,
+                  children: [
+                    _buildReceivedRequestsList(),
+                    _buildSentRequestsList(),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildReceivedRequestsList() {
+  Widget _buildSegmentedControl() {
     return Obx(() {
-      if (controller.receivedRequests.isEmpty) {
-        return _buildEmptyState(
-          icon: Icons.inbox,
-          title: 'No Friend requests',
-          message:
-              'When someone sends you a friend request, it will appear here.',
-        );
-      }
-      return ListView.separated(
-        itemBuilder: (context, index) {
-          final request = controller.receivedRequests[index];
-          final sender = controller.getUser(request.senderId);
-          if (sender == null) {
-            return SizedBox.shrink();
-          }
-          return FriendRequestItem(
-            request: request,
-            user: sender,
-            timeText: controller.getRequestTimeText(request.createdAt),
-            isReceived: true,
-            onAccept: () => controller.acceptRequest(request),
-            onDecline: () => controller.declineFriendRequest(request),
-            onRemove: () => _confirmRemove(request),
-          );
-        },
-        separatorBuilder: ((context, index) => SizedBox(height: 8)),
-        itemCount: controller.receivedRequests.length,
+      final selected = controller.selectedTabIndex;
+      final receivedCount = controller.receivedRequests.length;
+      final sentCount = controller.sentRequests.length;
+
+      return Container(
+        height: 38,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE5E5EA),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        padding: const EdgeInsets.all(2),
+        child: Row(
+          children: [
+            // Received Tab
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  controller.changeTab(0);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: selected == 0 ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: selected == 0
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 3,
+                              offset: Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Received',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              selected == 0 ? FontWeight.w600 : FontWeight.w500,
+                          color: selected == 0
+                              ? AppTheme.textPrimaryColor
+                              : const Color(0xFF636E72),
+                        ),
+                      ),
+                      if (receivedCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected == 0
+                                ? AppTheme.primaryColor
+                                : const Color(0xFF8E8E93),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$receivedCount',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Sent Tab
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  controller.changeTab(1);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: selected == 1 ? Colors.white : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: selected == 1
+                        ? const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 3,
+                              offset: Offset(0, 1),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Sent',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight:
+                              selected == 1 ? FontWeight.w600 : FontWeight.w500,
+                          color: selected == 1
+                              ? AppTheme.textPrimaryColor
+                              : const Color(0xFF636E72),
+                        ),
+                      ),
+                      if (sentCount > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected == 1
+                                ? AppTheme.primaryColor
+                                : const Color(0xFF8E8E93),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            '$sentCount',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       );
     });
   }
 
-  Widget _buildSendRequestsTab() {
+  Widget _buildReceivedRequestsList() {
     return Obx(() {
-      if (controller.sentRequests.isEmpty) {
+      final requests = controller.receivedRequests;
+      if (requests.isEmpty) {
         return _buildEmptyState(
-          icon: Icons.inbox,
-          title: 'No Sent requests',
-          message:
-              'Friend requests you send will appear here until they are accepted or declined.',
+          icon: Icons.person_search_rounded,
+          title: 'No Friend Requests',
+          subtitle:
+              'When people send you a friend request, it will appear here.',
+          action: FilledButton.icon(
+            onPressed: () => Get.toNamed(AppRoutes.usersList),
+            icon: const Icon(Icons.search_rounded, size: 18),
+            label: const Text('Find Friends'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+          ),
         );
       }
-      return ListView.separated(
-        itemBuilder: (context, index) {
-          final request = controller.sentRequests[index];
-          final receiver = controller.getUser(request.receiverId);
-          if (receiver == null) {
-            return SizedBox.shrink();
-          }
-          return FriendRequestItem(
-            request: request,
-            user: receiver,
-            timeText: controller.getRequestTimeText(request.createdAt),
-            isReceived: false,
-            statusText: controller.getStatusText(request.status),
-            statusColor: controller.getStatusColor(request.status),
-            onCancel: request.status == FriendRequestStatus.pending
-                ? () => controller.cancelFriendRequest(request)
-                : null,
-            onRemove: () => _confirmRemove(request),
+
+      return ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        itemCount: 1,
+        itemBuilder: (context, _) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE5E5EA),
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < requests.length; i++) ...[
+                    _buildReceivedRow(requests[i]),
+                    if (i < requests.length - 1)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 70),
+                        child: Divider(
+                          height: 0.5,
+                          thickness: 0.5,
+                          color: Color(0xFFF2F2F7),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
           );
         },
-        separatorBuilder: ((context, index) => SizedBox(height: 8)),
-        itemCount: controller.sentRequests.length,
       );
     });
+  }
+
+  Widget _buildReceivedRow(FriendRequestModel request) {
+    final sender = controller.getUser(request.senderId);
+    if (sender == null) return const SizedBox.shrink();
+
+    return FriendRequestItem(
+      key: ValueKey(request.id),
+      request: request,
+      user: sender,
+      timeText: controller.getRequestTimeText(request.createdAt),
+      isReceived: true,
+      onAccept: () => controller.acceptRequest(request),
+      onDecline: () => controller.declineFriendRequest(request),
+      onRemove: () => _confirmRemove(request),
+    );
+  }
+
+  Widget _buildSentRequestsList() {
+    return Obx(() {
+      final requests = controller.sentRequests;
+      if (requests.isEmpty) {
+        return _buildEmptyState(
+          icon: Icons.send_rounded,
+          title: 'No Sent Requests',
+          subtitle:
+              'Requests you send to other users will appear here until accepted.',
+        );
+      }
+
+      return ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        itemCount: 1,
+        itemBuilder: (context, _) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFE5E5EA),
+                  width: 0.5,
+                ),
+              ),
+              child: Column(
+                children: [
+                  for (int i = 0; i < requests.length; i++) ...[
+                    _buildSentRow(requests[i]),
+                    if (i < requests.length - 1)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 70),
+                        child: Divider(
+                          height: 0.5,
+                          thickness: 0.5,
+                          color: Color(0xFFF2F2F7),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    });
+  }
+
+  Widget _buildSentRow(FriendRequestModel request) {
+    final receiver = controller.getUser(request.receiverId);
+    if (receiver == null) return const SizedBox.shrink();
+
+    return FriendRequestItem(
+      key: ValueKey(request.id),
+      request: request,
+      user: receiver,
+      timeText: controller.getRequestTimeText(request.createdAt),
+      isReceived: false,
+      statusText: controller.getStatusText(request.status),
+      statusColor: controller.getStatusColor(request.status),
+      onCancel: request.status == FriendRequestStatus.pending
+          ? () => controller.cancelFriendRequest(request)
+          : null,
+      onRemove: () => _confirmRemove(request),
+    );
   }
 
   Widget _buildEmptyState({
     required IconData icon,
     required String title,
-    required String message,
+    required String subtitle,
+    Widget? action,
   }) {
     return Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(50),
-              ),
-              child: Icon(icon, size: 40, color: AppTheme.primaryColor),
+            Icon(
+              icon,
+              size: 52,
+              color: const Color(0xFFC7C7CC),
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 14),
             Text(
               title,
-              style: Theme.of(Get.context!).textTheme.headlineSmall?.copyWith(
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimaryColor,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              message,
-              style: Theme.of(Get.context!).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondaryColor,
+              subtitle,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF8E8E93),
+                height: 1.3,
               ),
               textAlign: TextAlign.center,
             ),
+            if (action != null) ...[
+              const SizedBox(height: 20),
+              action,
+            ],
           ],
         ),
       ),
@@ -242,17 +462,36 @@ class FriendRequestsView extends GetView<FriendRequestsController> {
   Future<void> _confirmRemove(FriendRequestModel request) async {
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
-        title: const Text('Remove request?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: const Text(
+          'Remove Request?',
+          style: TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         content: const Text(
-          'This request will be removed from your request history.',
+          'This will remove this request from your history.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF636E72),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
-            child: const Text('Keep'),
+            child: const Text('Cancel'),
           ),
           FilledButton(
             onPressed: () => Get.back(result: true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.errorColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Remove'),
           ),
         ],
